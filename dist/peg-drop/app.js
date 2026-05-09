@@ -2284,5 +2284,25 @@ if (hintShowBtn) hintShowBtn.addEventListener('click', (e) => {
 
 // ---- INIT ----
 state = { selectedOrb: 'round' };
-startStage(0);
-requestAnimationFrame(loop);
+
+// First-visit how-to-play dialog. Persists in localStorage so repeat
+// players aren't pestered. Rules ("?" header button) is always available.
+const introDlg = document.querySelector('#intro-dialog');
+const INTRO_KEY = 'peg-drop:intro-seen';
+function bootGame() {
+  // Populate state via startStage *before* the render loop starts —
+  // render() reads state.playerPegs/enemyPegs unconditionally, so the
+  // raf loop must not run until those exist.
+  startStage(0);
+  requestAnimationFrame(loop);
+}
+if (introDlg && localStorage.getItem(INTRO_KEY) !== '1') {
+  introDlg.addEventListener('close', () => {
+    localStorage.setItem(INTRO_KEY, '1');
+    bootGame();
+  }, { once: true });
+  if (introDlg.showModal) introDlg.showModal();
+  else bootGame();
+} else {
+  bootGame();
+}

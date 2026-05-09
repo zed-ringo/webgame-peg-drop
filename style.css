@@ -638,6 +638,47 @@ h1,h2,p,ul{margin:0}
   text-align:center;
 }
 
+/* Intro dialog — first-visit how-to-play */
+.intro-dialog form{padding:18px 0 32px;gap:18px}
+.intro-art{
+  width:min(38vw,150px) !important;
+  height:auto !important;
+}
+.intro-card{
+  background:#fff;
+  border:5px solid var(--line-dark);
+  border-radius:24px;
+  padding:18px 22px 20px;
+  max-width:min(86vw,520px);
+  box-shadow:0 5px 0 rgba(0,0,0,.20), 0 10px 22px rgba(20,10,30,.28);
+}
+.intro-title{
+  margin:0 0 14px;
+  text-align:center;
+  font-size:1.4rem;
+  color:#ff7e3c;
+  -webkit-text-stroke:4px var(--line-dark);
+  paint-order:stroke fill;
+  letter-spacing:.04em;
+  font-weight:900;
+}
+.intro-steps{
+  margin:0;
+  padding-left:1.5em;
+  display:grid;
+  gap:10px;
+  font-size:1rem;
+  font-weight:800;
+  color:#3b1f12;
+  line-height:1.45;
+  text-align:left;
+}
+.intro-steps li{text-align:left}
+.intro-card{text-align:left}
+.intro-steps li::marker{color:#ff7e3c;font-weight:900}
+.intro-steps strong{font-weight:900}
+.intro-steps strong.hot{color:#ff4f1d}
+
 .canvas-wrap{
   position:relative;
   width:100%;
