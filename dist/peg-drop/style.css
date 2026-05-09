@@ -1104,10 +1104,16 @@ dialog form,
   padding-left:1.2em;
   text-align:left;
 }
+/* Allow the BOOK pill (margin-top:-34px) to stick above the rounded form
+   without being clipped by the dialog element's UA-default overflow:auto. */
+.rules-dialog{
+  overflow:visible;
+}
 .rules-dialog form{
   max-height:90svh;
   display:flex;
   flex-direction:column;
+  overflow:visible;
 }
 .rules-dialog .rule-scroll{
   max-height:54svh;
