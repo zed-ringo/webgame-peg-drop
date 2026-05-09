@@ -608,8 +608,8 @@ function startStage(idx) {
   updateQueueUI();
   updateRoundStars();
   const sub = cfg.enemySize === 'boss'
-    ? 'BOSS — 先に 2 勝でクリア！'
-    : '先に 2 勝でステージクリア！';
+    ? 'ボスがめ！ 先に 2 勝でクリアがめ！'
+    : '先に 2 勝でステージクリアがめ！';
   showOverlay(`STAGE ${idx + 1}!`, sub, PALETTE.yellow);
 }
 
@@ -1000,7 +1000,7 @@ function onStageEnd(won) {
     flashMascot('victory', 1200);
     if (state.stageIdx + 1 >= STAGES.length) {
       // Final victory
-      showOverlay('VICTORY!', `冒険クリア！`, PALETTE.yellow);
+      showOverlay('VICTORY!', `冒険クリアがめ〜！`, PALETTE.yellow);
       setTimeout(() => onFinalVictory(), 1500);
     } else {
       hideOverlay();
@@ -1017,7 +1017,7 @@ function onStageEnd(won) {
     setPlayerState(''); // stop idle anim
     setMascotSprite('defeat');
     flashClass(mascotSlot, 'damage', 360);
-    showOverlay('DEFEAT', `${state.stageIdx + 1} ステージで力尽きた`, PALETTE.damageText);
+    showOverlay('DEFEAT', `${state.stageIdx + 1} ステージでちからつきたがめ…`, PALETTE.damageText);
     setTimeout(() => {
       onDefeat();
     }, 1500);
@@ -2405,7 +2405,7 @@ function showUnlockThenRestart(lap) {
       if (k === 'bomb') {
         li.innerHTML = '<span class="unlock-badge unlock-bomb">💥</span><div class="unlock-text"><strong>ボムペグ</strong>とうじょう！どの玉が当たっても <strong>大ばくはつ</strong>、まわりのペグもまきこんで一気にダメージがめ！</div>';
       } else if (k === 'star') {
-        li.innerHTML = '<span class="unlock-badge unlock-star">★</span><div class="unlock-text"><strong>スター玉</strong>とうじょう！どの色のペグも壊せる <strong>万能玉</strong>がめ。たまに出るから狙いどころが大事！</div>';
+        li.innerHTML = '<span class="unlock-badge unlock-star">★</span><div class="unlock-text"><strong>スター玉</strong>とうじょう！どの色のペグも壊せる <strong>万能玉</strong>がめ。たまに出るから、ねらいどころが大事がめ〜！</div>';
       }
       list.appendChild(li);
     }
@@ -2423,8 +2423,8 @@ function onDefeat() {
   hideOverlay();
   const enemyNames = ['ぷにスライム', 'ふわゴースト', '黒幕'];
   resultTag.textContent = 'DEFEAT';
-  resultTitle.textContent = '敗北';
-  resultText.textContent = `${enemyNames[state.stageIdx]} に敗れた。もう一度挑戦しよう。`;
+  resultTitle.textContent = 'やられたがめ…';
+  resultText.textContent = `${enemyNames[state.stageIdx]} にやられたがめ。もう一回ちょうせんするがめ！`;
   if (dialog.showModal) dialog.showModal();
 }
 
@@ -2438,11 +2438,11 @@ dialog.addEventListener('close', () => {
 // えすけーぷがめ explains the rules across cycling messages.
 const HINT_MESSAGES = [
   '<p><strong class="peg-blue">青の玉</strong>は <strong class="peg-blue">青ペグ</strong>を壊して相手にダメージがめ！</p>',
-  '<p><strong class="peg-red">赤の玉</strong>は <strong class="peg-red">赤ペグ</strong>に強いがめ。BREAK で大ダメージ！</p>',
+  '<p><strong class="peg-red">赤の玉</strong>は <strong class="peg-red">赤ペグ</strong>に強いがめ。BREAK で大ダメージがめ〜！</p>',
   '<p><strong class="peg-green">緑の玉</strong>は <strong class="peg-green">緑ペグ</strong>に当たると <strong>分裂</strong>して2発になるがめ〜</p>',
   '<p><strong class="peg-purple">紫(回復)ペグ</strong>に当てると <strong>HP +2</strong> がめ！ピンチで使うがめ〜</p>',
-  '<p><strong class="peg-gray">グレーのペグ</strong>はどの玉でも 1 ダメージ。ただの中継地点がめ。</p>',
-  '<p>同じ色の玉×ペグで <strong>BREAK</strong>ペグ消滅 +2dmg がめ！</p>',
+  '<p><strong class="peg-gray">グレーのペグ</strong>はどの玉でも 1 ダメージがめ。中継地点として使うがめ〜</p>',
+  '<p>同じ色の玉×ペグで <strong>BREAK</strong>ペグ消滅 +2 ダメージがめ！</p>',
   '<p>玉が動かなくなったら <strong>1秒で消える</strong>がめ。詰まりは怖くないがめ〜</p>',
   '<p>盤面の<strong>落としたい位置</strong>をタップすると玉がそこから落ちるがめ！</p>',
   '<p>盤面のペグはステージごとに配置が変わるがめ。よく見るがめ〜</p>',

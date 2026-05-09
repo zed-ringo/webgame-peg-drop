@@ -1104,6 +1104,24 @@ dialog form,
   padding-left:1.2em;
   text-align:left;
 }
+.rules-dialog form{
+  max-height:90svh;
+  display:flex;
+  flex-direction:column;
+}
+.rules-dialog .rule-scroll{
+  max-height:54svh;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding-right:6px;
+  margin:6px -2px 0;
+  /* fade hint at top/bottom edges so users see there's more */
+  mask-image:linear-gradient(180deg,
+    transparent 0,
+    #000 12px,
+    #000 calc(100% - 12px),
+    transparent 100%);
+}
 .rules-dialog .rule-list{
   list-style:none;
   padding:0;
