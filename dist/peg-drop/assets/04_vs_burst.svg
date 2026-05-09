@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+<defs>
+<filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+  <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000000" flood-opacity="0.28"/>
+</filter>
+<filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+  <feGaussianBlur stdDeviation="4" result="blur"/>
+  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+</filter>
+<linearGradient id="burst" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffe066"/><stop offset="100%" stop-color="#ff9d3a"/></linearGradient>
+</defs>
+
+
+<g filter="url(#shadow)">
+<polygon points="100.0,8.0 115.0,44.0 146.0,20.3 141.0,59.0 179.7,54.0 156.0,85.0 192.0,100.0 156.0,115.0 179.7,146.0 141.0,141.0 146.0,179.7 115.0,156.0 100.0,192.0 85.0,156.0 54.0,179.7 59.0,141.0 20.3,146.0 44.0,115.0 8.0,100.0 44.0,85.0 20.3,54.0 59.0,59.0 54.0,20.3 85.0,44.0" fill="url(#burst)" stroke="#111" stroke-width="4" stroke-linejoin="round"/>
+<path d="M45 58 C68 38 129 38 154 62" fill="none" stroke="#fff" stroke-width="10" opacity=".35" stroke-linecap="round"/>
+<text x="100" y="125" text-anchor="middle" font-family="Arial Rounded MT Bold, sans-serif" font-size="70" font-weight="900" fill="#fff" stroke="#111" stroke-width="8" paint-order="stroke fill">VS</text>
+</g>
+</svg>

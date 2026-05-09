@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+<defs>
+<filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+  <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000000" flood-opacity="0.28"/>
+</filter>
+<filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+  <feGaussianBlur stdDeviation="4" result="blur"/>
+  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+</filter>
+<radialGradient id="body" cx=".32" cy=".2" r=".75"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#f0dfff"/></radialGradient>
+</defs>
+
+
+<g filter="url(#shadow)">
+<ellipse cx="100" cy="181" rx="64" ry="9" fill="#000" opacity=".18"/>
+<path d="M48 100 C55 58 141 58 152 101 C172 109 174 144 153 160 C131 178 65 177 45 159 C25 142 29 109 48 100Z" fill="url(#body)" stroke="#111" stroke-width="5"/>
+<path d="M69 70 C55 38 69 21 94 57" fill="none" stroke="#111" stroke-width="8" stroke-linecap="round"/>
+<path d="M128 70 C144 37 130 20 105 57" fill="none" stroke="#111" stroke-width="8" stroke-linecap="round"/>
+<path d="M56 94 C75 67 125 66 145 95" fill="none" stroke="#fff" stroke-width="8" opacity=".45" stroke-linecap="round"/>
+<ellipse cx="78" cy="119" rx="10" ry="14" fill="#2a1d26"/><ellipse cx="122" cy="119" rx="10" ry="14" fill="#2a1d26"/>
+<circle cx="81" cy="113" r="3" fill="#fff"/><circle cx="125" cy="113" r="3" fill="#fff"/>
+<path d="M90 137 C98 144 108 144 115 136" fill="none" stroke="#453044" stroke-width="4" stroke-linecap="round"/>
+<circle cx="59" cy="136" r="9" fill="#ff9ebc" opacity=".55"/><circle cx="141" cy="136" r="9" fill="#ff9ebc" opacity=".55"/>
+</g>
+</svg>

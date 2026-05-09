@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="540" viewBox="0 0 220 540">
+<defs>
+<filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+  <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000000" flood-opacity="0.28"/>
+</filter>
+<filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+  <feGaussianBlur stdDeviation="4" result="blur"/>
+  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+</filter>
+<linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff9cc2"/><stop offset="100%" stop-color="#ff3e88"/></linearGradient><linearGradient id="rim" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#ffffff"/></linearGradient><radialGradient id="riv" cx=".35" cy=".25" r=".75"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#777b86"/></radialGradient>
+</defs>
+
+
+<g filter="url(#shadow)">
+  <path d="M22 6 H198 Q214 6 214 28 V512 Q214 534 192 534 H28 Q6 534 6 512 V28 Q6 6 22 6 Z
+           M34 34 V506 H186 V34 Z"
+        fill="url(#g)" fill-rule="evenodd" stroke="#111111" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M32 20 H188 Q201 20 201 34 V506 Q201 520 187 520 H33 Q19 520 19 506 V34 Q19 20 32 20 Z
+           M42 42 V498 H178 V42 Z"
+        fill="none" stroke="#ffffff" stroke-width="5" opacity=".9"/>
+  <path d="M36 24 H184 Q197 24 197 37" fill="none" stroke="#ffffff" stroke-width="9" opacity=".42" stroke-linecap="round"/>
+  <g>
+    <circle cx="28" cy="28" r="12" fill="url(#riv)" stroke="#111" stroke-width="3"/>
+    <circle cx="192" cy="28" r="12" fill="url(#riv)" stroke="#111" stroke-width="3"/>
+    <circle cx="28" cy="512" r="12" fill="url(#riv)" stroke="#111" stroke-width="3"/>
+    <circle cx="192" cy="512" r="12" fill="url(#riv)" stroke="#111" stroke-width="3"/>
+  </g>
+</g>
+</svg>

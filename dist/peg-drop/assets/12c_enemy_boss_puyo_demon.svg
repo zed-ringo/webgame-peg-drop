@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+<defs>
+<filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+  <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000000" flood-opacity="0.28"/>
+</filter>
+<filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+  <feGaussianBlur stdDeviation="4" result="blur"/>
+  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+</filter>
+<radialGradient id="body" cx=".32" cy=".22" r=".75"><stop offset="0%" stop-color="#d8a4ff"/><stop offset="100%" stop-color="#6d24bd"/></radialGradient><linearGradient id="aura" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffe875"/><stop offset="100%" stop-color="#ff9d3a"/></linearGradient>
+</defs>
+
+
+<g filter="url(#shadow)">
+<circle cx="120" cy="120" r="96" fill="url(#aura)" opacity=".35" filter="url(#softGlow)"/>
+<ellipse cx="120" cy="222" rx="72" ry="10" fill="#000" opacity=".25"/>
+<path d="M50 130 C50 78 82 48 123 50 C167 52 195 88 190 136 C185 185 65 189 50 130Z" fill="url(#body)" stroke="#111" stroke-width="6"/>
+<path d="M72 58 l-18 -20 M169 58 l20 -20" stroke="#111" stroke-width="10" stroke-linecap="round"/>
+<path d="M91 44 L101 22 L117 39 L137 21 L144 46" fill="#ffd24a" stroke="#111" stroke-width="5" stroke-linejoin="round"/>
+<path d="M67 101 C92 72 153 70 177 101" fill="none" stroke="#fff" stroke-width="9" opacity=".35" stroke-linecap="round"/>
+<path d="M83 121 l10 5 l10-5 l-5 10 l5 10 l-10-5 l-10 5 l5-10z" fill="#ffe875" stroke="#111" stroke-width="3"/>
+<path d="M139 121 l10 5 l10-5 l-5 10 l5 10 l-10-5 l-10 5 l5-10z" fill="#ffe875" stroke="#111" stroke-width="3"/>
+<path d="M93 161 C113 176 144 171 158 153" fill="none" stroke="#111" stroke-width="6" stroke-linecap="round"/>
+</g>
+</svg>

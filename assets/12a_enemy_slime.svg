@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+<defs>
+<filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+  <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000000" flood-opacity="0.28"/>
+</filter>
+<filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+  <feGaussianBlur stdDeviation="4" result="blur"/>
+  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+</filter>
+<radialGradient id="body" cx=".32" cy=".18" r=".75"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#18d0c9"/></radialGradient>
+</defs>
+
+
+<g filter="url(#shadow)">
+<ellipse cx="100" cy="180" rx="62" ry="9" fill="#000" opacity=".22"/>
+<path d="M42 108 C42 62 70 34 104 38 C141 42 161 73 154 116 C147 157 54 158 42 108Z" fill="url(#body)" stroke="#111" stroke-width="5"/>
+<path d="M58 78 C76 48 123 46 144 76" fill="none" stroke="#fff" stroke-width="8" opacity=".38" stroke-linecap="round"/>
+<ellipse cx="81" cy="97" rx="13" ry="17" fill="#fff"/><ellipse cx="118" cy="94" rx="12" ry="16" fill="#fff" transform="rotate(-12 118 94)"/>
+<circle cx="85" cy="101" r="6" fill="#222"/><circle cx="122" cy="98" r="6" fill="#222"/>
+<path d="M80 126 C96 138 118 135 130 119" fill="none" stroke="#111" stroke-width="5" stroke-linecap="round"/>
+<path d="M105 135 l8 13 l8 -15" fill="#fff" stroke="#111" stroke-width="3"/>
+</g>
+</svg>

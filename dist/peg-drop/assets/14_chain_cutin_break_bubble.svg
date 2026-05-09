@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="120" viewBox="0 0 240 120">
+<defs>
+<filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+  <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000000" flood-opacity="0.28"/>
+</filter>
+<filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+  <feGaussianBlur stdDeviation="4" result="blur"/>
+  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+</filter>
+<linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffe066"/><stop offset="100%" stop-color="#ff9d3a"/></linearGradient>
+</defs>
+
+<g filter="url(#shadow)"><polygon points="231.6,50.2 200.8,74.2 221.5,107.3 182.8,112.7 184.2,151.7 148.0,137.1 129.8,171.6 105.8,140.8 72.7,161.5 67.3,122.8 28.3,124.2 42.9,88.0 8.4,69.8 39.2,45.8 18.5,12.7 57.2,7.3 55.8,-31.7 92.0,-17.1 110.2,-51.6 134.2,-20.8 167.3,-41.5 172.7,-2.8 211.7,-4.2 197.1,32.0" fill="url(#g)" stroke="#111" stroke-width="5" stroke-linejoin="round"/><path d="M42 42 C85 20 160 20 200 42" fill="none" stroke="#fff" stroke-width="8" opacity=".38" stroke-linecap="round"/><text x="120" y="78" text-anchor="middle" font-family="Arial Rounded MT Bold, sans-serif" font-size="42" font-weight="900" fill="#fff" stroke="#111" stroke-width="6" paint-order="stroke fill">BREAK!</text></g>
+</svg>

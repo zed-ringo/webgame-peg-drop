@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+<defs>
+<filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+  <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000000" flood-opacity="0.28"/>
+</filter>
+<filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+  <feGaussianBlur stdDeviation="4" result="blur"/>
+  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+</filter>
+
+</defs>
+
+
+<g filter="url(#softGlow)">
+<circle cx="100" cy="100" r="54" fill="none" stroke="#fff06b" stroke-width="6" opacity=".75"/>
+<circle cx="100" cy="100" r="28" fill="none" stroke="#fff" stroke-width="4" opacity=".9"/>
+<path d="M100 100 L180.0 100.0" stroke="#ffe066" stroke-width="5" stroke-linecap="round"/><path d="M100 100 L169.3 140.0" stroke="#ffe066" stroke-width="3" stroke-linecap="round"/><path d="M100 100 L140.0 169.3" stroke="#ffe066" stroke-width="5" stroke-linecap="round"/><path d="M100 100 L100.0 180.0" stroke="#ffe066" stroke-width="3" stroke-linecap="round"/><path d="M100 100 L60.0 169.3" stroke="#ffe066" stroke-width="5" stroke-linecap="round"/><path d="M100 100 L30.7 140.0" stroke="#ffe066" stroke-width="3" stroke-linecap="round"/><path d="M100 100 L20.0 100.0" stroke="#ffe066" stroke-width="5" stroke-linecap="round"/><path d="M100 100 L30.7 60.0" stroke="#ffe066" stroke-width="3" stroke-linecap="round"/><path d="M100 100 L60.0 30.7" stroke="#ffe066" stroke-width="5" stroke-linecap="round"/><path d="M100 100 L100.0 20.0" stroke="#ffe066" stroke-width="3" stroke-linecap="round"/><path d="M100 100 L140.0 30.7" stroke="#ffe066" stroke-width="5" stroke-linecap="round"/><path d="M100 100 L169.3 60.0" stroke="#ffe066" stroke-width="3" stroke-linecap="round"/><path d="M45 43 L50 50 L57 55 L50 60 L45 67 L40 60 L33 55 L40 50Z" fill="#fff"/><path d="M155 38 L160 45 L167 50 L160 55 L155 62 L150 55 L143 50 L150 45Z" fill="#fff06b"/><path d="M50 138 L55 145 L62 150 L55 155 L50 162 L45 155 L38 150 L45 145Z" fill="#fff06b"/><path d="M150 133 L155 140 L162 145 L155 150 L150 157 L145 150 L138 145 L145 140Z" fill="#fff"/><path d="M100 18 L105 25 L112 30 L105 35 L100 42 L95 35 L88 30 L95 25Z" fill="#fff"/><path d="M100 158 L105 165 L112 170 L105 175 L100 182 L95 175 L88 170 L95 165Z" fill="#fff06b"/></g>
+</svg>

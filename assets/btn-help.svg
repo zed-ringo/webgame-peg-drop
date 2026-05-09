@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" font-family="'M PLUS Rounded 1c','Hiragino Maru Gothic ProN',ui-rounded,system-ui,sans-serif">
+  <defs>
+    <radialGradient id="helpBody" cx="0.34" cy="0.26" r="0.88">
+      <stop offset="0%" stop-color="#e9f7ff"/>
+      <stop offset="32%" stop-color="#7ec8ff"/>
+      <stop offset="78%" stop-color="#3a8fd8"/>
+      <stop offset="100%" stop-color="#194c84"/>
+    </radialGradient>
+    <linearGradient id="helpRing" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#d6efff"/>
+      <stop offset="100%" stop-color="#1f5485"/>
+    </linearGradient>
+    <linearGradient id="helpGloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="50" cy="93" rx="36" ry="6" fill="rgba(20,8,32,0.32)"/>
+  <circle cx="50" cy="50" r="48" fill="#1a0a2c"/>
+  <circle cx="50" cy="50" r="46" fill="url(#helpRing)"/>
+  <circle cx="50" cy="50" r="40" fill="#1a0a2c"/>
+  <circle cx="50" cy="52" r="38" fill="#1c4f87"/>
+  <circle cx="50" cy="50" r="38" fill="url(#helpBody)"/>
+  <path d="M16 38 Q50 14 84 38 Q72 28 50 28 Q28 28 16 38 Z" fill="url(#helpGloss)"/>
+  <ellipse cx="36" cy="30" rx="9" ry="4" fill="#ffffff" opacity="0.85"/>
+  <!-- ? glyph: white fill + thick black stroke -->
+  <text x="50" y="74" text-anchor="middle" font-size="58" font-weight="900"
+        fill="#ffffff" stroke="#1a0a2c" stroke-width="7" stroke-linejoin="round" paint-order="stroke fill">?</text>
+  <circle cx="78" cy="22" r="1.7" fill="#ffffff" opacity="0.7"/>
+  <circle cx="22" cy="78" r="1.4" fill="#ffffff" opacity="0.5"/>
+</svg>

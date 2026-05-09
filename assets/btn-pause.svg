@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <radialGradient id="pauseBody" cx="0.34" cy="0.26" r="0.88">
+      <stop offset="0%" stop-color="#ffe6f3"/>
+      <stop offset="32%" stop-color="#ff9ec5"/>
+      <stop offset="78%" stop-color="#e15a8c"/>
+      <stop offset="100%" stop-color="#7e1d4b"/>
+    </radialGradient>
+    <linearGradient id="pauseRing" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffd1e3"/>
+      <stop offset="100%" stop-color="#882b54"/>
+    </linearGradient>
+    <linearGradient id="pauseGloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="50" cy="93" rx="36" ry="6" fill="rgba(20,8,32,0.32)"/>
+  <circle cx="50" cy="50" r="48" fill="#1a0a2c"/>
+  <circle cx="50" cy="50" r="46" fill="url(#pauseRing)"/>
+  <circle cx="50" cy="50" r="40" fill="#1a0a2c"/>
+  <circle cx="50" cy="52" r="38" fill="#902c5a"/>
+  <circle cx="50" cy="50" r="38" fill="url(#pauseBody)"/>
+  <path d="M16 38 Q50 14 84 38 Q72 28 50 28 Q28 28 16 38 Z" fill="url(#pauseGloss)"/>
+  <ellipse cx="36" cy="30" rx="9" ry="4" fill="#ffffff" opacity="0.85"/>
+  <g fill="#ffffff" stroke="#1a0a2c" stroke-width="3.4" stroke-linejoin="round">
+    <rect x="33" y="28" width="11" height="44" rx="3.5"/>
+    <rect x="56" y="28" width="11" height="44" rx="3.5"/>
+  </g>
+  <circle cx="78" cy="22" r="1.7" fill="#ffffff" opacity="0.7"/>
+  <circle cx="22" cy="78" r="1.4" fill="#ffffff" opacity="0.5"/>
+</svg>
