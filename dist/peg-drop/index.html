@@ -45,7 +45,7 @@
           <div class="board-shell">
             <div class="board-bg board-bg-player" aria-hidden="true"></div>
             <div class="board-bg board-bg-enemy" aria-hidden="true"></div>
-            <canvas id="canvas" width="480" height="540"></canvas>
+            <canvas id="canvas" width="480" height="720"></canvas>
           </div>
           <div class="char-mount vs-portrait player">
             <img id="mascot-img" src="assets/turtle-idle.png" alt="自分" />
@@ -60,12 +60,14 @@
             </div>
           </div>
         </div>
-        <div class="hint-row">
+        <div class="hint-row" id="hint-row">
           <img class="hint-mascot" src="assets/turtle-idle.png" alt="えすけーぷがめ" />
           <div class="speech-bubble" id="hint-bubble">
+            <button type="button" class="hint-hide" id="hint-hide" aria-label="ヒントを隠す">×</button>
             <div class="speech-content" id="hint-content"></div>
             <div class="speech-dots" id="hint-dots"></div>
           </div>
+          <button type="button" class="hint-show" id="hint-show" aria-label="ヒントを表示">?</button>
         </div>
       </section>
     </main>
@@ -92,8 +94,7 @@
         <h2 id="result-title">冒険終了</h2>
         <p id="result-text"></p>
         <menu>
-          <button value="close">閉じる</button>
-          <button value="restart" class="primary">もう一度</button>
+          <button value="restart" class="primary big">もう一度あそぶ</button>
         </menu>
       </form>
     </dialog>

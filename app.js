@@ -3,6 +3,22 @@
 
 const canvas = document.querySelector('#canvas');
 const ctx = canvas.getContext('2d');
+// High-quality smoothing for sharp edges on big peg/cannon images that get
+// downscaled to small render sizes.
+ctx.imageSmoothingEnabled = true;
+ctx.imageSmoothingQuality = 'high';
+// Match the device pixel ratio so canvas doesn't render blurry on Retina.
+const DPR = window.devicePixelRatio || 1;
+if (DPR > 1) {
+  const cw = canvas.width, ch = canvas.height;
+  canvas.width = cw * DPR;
+  canvas.height = ch * DPR;
+  canvas.style.width = '100%';
+  canvas.style.height = 'auto';
+  ctx.scale(DPR, DPR);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+}
 const enemyImg = document.querySelector('#enemy-img');
 const enemySlot = enemyImg.parentElement;
 const mascotImg = document.querySelector('#mascot-img');
@@ -20,8 +36,8 @@ const overlayEl = document.querySelector('#stage-overlay');
 
 // Canvas: 480 wide, 540 tall — vertically compressed so the full HUD + VS +
 // arena + hint row fit inside one viewport without scrolling.
-const CANVAS_W = 480, CANVAS_H = 540;
-const BOARD_W = 220, BOARD_H = 460;
+const CANVAS_W = 480, CANVAS_H = 720;
+const BOARD_W = 220, BOARD_H = 640;
 const PLAYER_X0 = 0, PLAYER_X1 = BOARD_W;            // [0, 220]
 const ENEMY_X0 = CANVAS_W - BOARD_W, ENEMY_X1 = CANVAS_W; // [260, 480]
 const TOWER_H = 56;
@@ -91,6 +107,16 @@ const PEG_FILL = {
   blue:  '#4cb1ff',  // matches round orb
   green: '#74d756',  // matches drop orb
   heal:  '#ff97c2',  // pink heart-pink
+};
+// Per-color bounce factor — multiplied with the ORB's damp on normal bounce
+// so pegs visually feel different. White (neutral) = bounciest pinball pegs;
+// colored pegs = milder bounce so ball gets to its match faster; heal = sticky.
+const PEG_BOUNCE = {
+  white: 1.10,
+  red:   0.80,
+  blue:  0.80,
+  green: 0.80,
+  heal:  0.55,
 };
 
 // Stage 1 = teaching stage. ONLY blue + gray (white) pegs. No HEAL.
@@ -209,13 +235,20 @@ function applyLapDifficulty(baseCfg, playLap = 0) {
 // lap3:  S1 HP26 / 2.30-2.79s,        S2 HP42 / 1.72-2.21s,        S3 HP74 / 1.22-1.62s
 // lap9:  S1 HP45 / 1.46-1.77s,        S2 HP73 / 1.09-1.40s,        S3 HP135 / 0.81-1.07s
 
-// Map source y-range (~70..625) to playable canvas range (TOWER_H+10..CANVAS_H-25)
-// so pegs use the full visible board height.
-const LAYOUT_Y_TOP = TOWER_H + 10;
-const LAYOUT_Y_BOT = CANVAS_H - 25;
-const LAYOUT_Y_SCALE = (LAYOUT_Y_BOT - LAYOUT_Y_TOP) / (625 - 70);
+// Per-layout normalize: map each layout's actual source y-range to the
+// playable canvas y-range. Top buffer keeps pegs clear of the cannon mouth
+// so balls have a clean drop zone before first contact.
+const LAYOUT_Y_TOP = TOWER_H + 60;       // top peg row target — keeps gap below cannon
+const LAYOUT_Y_BOT = CANVAS_H - 20;      // bottom peg row target
 function scaleLayoutY(layout) {
-  return layout.map(([x, y]) => [x, Math.round(LAYOUT_Y_TOP + (y - 70) * LAYOUT_Y_SCALE)]);
+  let yMin = Infinity, yMax = -Infinity;
+  for (const [, y] of layout) {
+    if (y < yMin) yMin = y;
+    if (y > yMax) yMax = y;
+  }
+  const span = Math.max(1, yMax - yMin);
+  const scale = (LAYOUT_Y_BOT - LAYOUT_Y_TOP) / span;
+  return layout.map(([x, y]) => [x, Math.round(LAYOUT_Y_TOP + (y - yMin) * scale)]);
 }
 
 // Peg layout templates per stage. Spacing is intentionally non-uniform —
@@ -488,6 +521,9 @@ function startStage(idx) {
     cannonBursts: [],
     boardSparkles: [],
     chainFrame: null,
+    // Best-of-3 tracker per stage. Resets when entering a new stage.
+    playerWins: 0,
+    enemyWins: 0,
   };
   const baseStage = STAGES[idx];
   enemyImg.src = `assets/${baseStage.enemy}.png`;
@@ -499,7 +535,11 @@ function startStage(idx) {
   setTimeout(() => enemySlot.classList.remove('appear'), 380);
   updateHUD();
   updateQueueUI();
-  showOverlay(`STAGE ${idx + 1}!`, cfg.enemySize === 'boss' ? 'BOSS BATTLE' : 'READY?', PALETTE.yellow);
+  updateRoundStars();
+  const sub = cfg.enemySize === 'boss'
+    ? 'BOSS — 先に 2 勝でクリア！'
+    : '先に 2 勝でステージクリア！';
+  showOverlay(`STAGE ${idx + 1}!`, sub, PALETTE.yellow);
 }
 
 const ORB_LABELS = {
@@ -715,8 +755,10 @@ function updateBalls(balls, pegs, side, dt) {
           setTimeout(() => spawnHpDamagePopup(targetSide, dmgValue, false), 240);
         }
         if (effect === 'destroy') {
-          // Ball passes through, slight slowdown
+          // Ball passes through with slight slowdown + small horizontal kick
+          // so the impact reads visually (otherwise ball just ghosts through).
           b.vy *= 0.85;
+          b.vx += (Math.random() - 0.5) * 80;
         } else if (effect === 'split') {
           // Spawn second ball at same position with offset velocity
           const newBall = { ...b, vx: -200 + Math.random() * 50, vy: -100 + Math.random() * 50 };
@@ -732,13 +774,14 @@ function updateBalls(balls, pegs, side, dt) {
           b.vx = (b.vx - 2 * dot * nx) * damp + (Math.random() - 0.5) * jit + 200;
           b.vy = (b.vy - 2 * dot * ny) * damp;
         } else {
-          // Normal bounce
+          // Normal bounce — peg color modulates bounce strength.
+          const colorBounce = PEG_BOUNCE[p.color] || 1.0;
           const nx = dx / d, ny = dy / d;
           b.x = p.x + nx * (BALL_R + PEG_R);
           b.y = p.y + ny * (BALL_R + PEG_R);
           const dot = b.vx * nx + b.vy * ny;
-          b.vx = (b.vx - 2 * dot * nx) * damp + (Math.random() - 0.5) * jit;
-          b.vy = (b.vy - 2 * dot * ny) * damp;
+          b.vx = (b.vx - 2 * dot * nx) * damp * colorBounce + (Math.random() - 0.5) * jit;
+          b.vy = (b.vy - 2 * dot * ny) * damp * colorBounce;
         }
         break; // 1 collision per frame
       }
@@ -799,21 +842,37 @@ function checkVictory() {
 }
 
 function onStageEnd(won) {
+  // Best-of-3: each stage is first-to-2-rounds. Track per-side wins, only
+  // advance when one side reaches 2.
+  if (won) state.playerWins = (state.playerWins || 0) + 1;
+  else state.enemyWins = (state.enemyWins || 0) + 1;
+  updateRoundStars();
   const cfg = STAGES[state.stageIdx];
+  const STAGE_TARGET = 2; // 2 wins clears stage
+  if (won && state.playerWins < STAGE_TARGET) {
+    // Round won but stage not cleared — flash, brief banner, restart round
+    showOverlay('ROUND WIN!', `あと ${STAGE_TARGET - state.playerWins} 勝でステージクリアがめ！`, PALETTE.player);
+    setTimeout(() => { hideOverlay(); restartRound(); }, 1300);
+    return;
+  }
+  if (!won && state.enemyWins < STAGE_TARGET) {
+    showOverlay('ROUND LOST', `あと ${STAGE_TARGET - state.enemyWins} 度負けたら敗北がめ…！`, PALETTE.damageText);
+    setMascotSprite('damage');
+    flashClass(mascotSlot, 'damage', 360);
+    setTimeout(() => { hideOverlay(); setMascotSprite('idle'); restartRound(); }, 1300);
+    return;
+  }
+  // Stage decided
   if (won) {
     enemyImg.src = `assets/${cfg.enemyDefeat}.png`;
     setEnemyState(''); // stop idle anim
     enemySlot.classList.add('crumble');
-    // Mascot bounces in corner without sprite swap; the big victory art
-    // is reserved for the celebrate dialog so the corner stays compact.
     flashMascot('victory', 1200);
     if (state.stageIdx + 1 >= STAGES.length) {
       // Final victory
       showOverlay('VICTORY!', `冒険クリア！`, PALETTE.yellow);
       setTimeout(() => onFinalVictory(), 1500);
     } else {
-      // Stage clear modal — STAGE CLEAR! art + 次のステージへ button.
-      // hideOverlay first so the canvas-side text doesn't linger behind it.
       hideOverlay();
       const clearDlg = document.querySelector('#stage-clear-dialog');
       const advance = () => {
@@ -835,6 +894,40 @@ function onStageEnd(won) {
   }
 }
 
+function restartRound() {
+  // Re-prep board for next round of the same stage. Keep wins, restart pegs/HP.
+  const cfg = STAGES[state.stageIdx];
+  const adjusted = applyLapDifficulty(cfg, state.playLap || 0);
+  state.playerHP = PLAYER_HP_MAX;
+  state.enemyHP = adjusted.enemyHP;
+  state.enemyHPMax = adjusted.enemyHP;
+  state.playerPegs = buildBoard(shufflePalette(adjusted.pegPalette), state.stageIdx);
+  state.enemyPegs = buildBoard(shufflePalette(adjusted.pegPalette), state.stageIdx);
+  state.playerBalls = [];
+  state.enemyBalls = [];
+  state.queue = [];
+  state.enemyQueue = [];
+  fillQueue(state.queue, 8, state.stageIdx);
+  fillQueue(state.enemyQueue, 8, state.stageIdx);
+  state.phase = 'aim';
+  state.aimX = BOARD_W / 2;
+  state.enemyActClock = 0;
+  state.enemyActAt = rollInterval(adjusted.aiInterval);
+  setMascotSprite('idle');
+  setPlayerState('idle');
+  updateHUD();
+}
+
+function updateRoundStars() {
+  // Fill star icons on the HP plates: filled stars = wins so far, empty = remaining
+  const fill = (sel, wins) => {
+    const stars = document.querySelectorAll(sel);
+    stars.forEach((s, i) => s.classList.toggle('won', i < wins));
+  };
+  fill('.plate-player .plate-stars .star', state.playerWins || 0);
+  fill('.plate-enemy .plate-stars .star', state.enemyWins || 0);
+}
+
 function showOverlay(title, sub, color) {
   overlayEl.querySelector('.overlay-title').textContent = title;
   overlayEl.querySelector('.overlay-sub').textContent = sub;
@@ -849,6 +942,8 @@ function showOverlay(title, sub, color) {
 }
 function hideOverlay() {
   overlayEl.classList.remove('visible');
+  overlayEl.querySelector('.overlay-title').textContent = '';
+  overlayEl.querySelector('.overlay-sub').textContent = '';
 }
 
 function updateAnimations(dt) {
@@ -924,12 +1019,17 @@ function loop(t) {
   if (state.phase === 'countdown') {
     updateCountdown(dt);
   } else if (state.phase === 'aim') {
-    state.enemyActClock += dt;
-    if (state.enemyActClock >= state.enemyActAt) {
-      enemyDropResponse();
-      resetEnemyActTimer();
-      state.phase = 'dropping';
-      state.firstTapHint = false;
+    // Only the final boss stage may fire on its own. Earlier stages stay in
+    // lockstep — the enemy waits until the player taps, then responds.
+    const isFinalBoss = state.stageIdx === STAGES.length - 1;
+    if (isFinalBoss) {
+      state.enemyActClock += dt;
+      if (state.enemyActClock >= state.enemyActAt) {
+        enemyDropResponse();
+        resetEnemyActTimer();
+        state.phase = 'dropping';
+        state.firstTapHint = false;
+      }
     }
   } else if (state.phase === 'dropping') {
     state.chainFrame = {};
@@ -2111,7 +2211,9 @@ function onDefeat() {
 }
 
 dialog.addEventListener('close', () => {
-  if (dialog.returnValue === 'restart') startStage(0);
+  // Defeat dialog: any close path (button or ESC) should restart so the
+  // player is never stranded with a non-interactive board.
+  startStage(0);
 });
 
 // ---- Hint bubble rotation ----
@@ -2124,7 +2226,7 @@ const HINT_MESSAGES = [
   '<p><strong class="peg-gray">グレーのペグ</strong>はどの玉でも 1 ダメージ。ただの中継地点がめ。</p>',
   '<p>同じ色の玉×ペグで <strong>BREAK</strong>ペグ消滅 +2dmg がめ！</p>',
   '<p>玉が動かなくなったら <strong>1秒で消える</strong>がめ。詰まりは怖くないがめ〜</p>',
-  '<p><strong>砲台をタップ</strong>で発射、左右ドラッグで照準を動かすがめ！</p>',
+  '<p>盤面の<strong>落としたい位置</strong>をタップすると玉がそこから落ちるがめ！</p>',
   '<p>盤面のペグはステージごとに配置が変わるがめ。よく見るがめ〜</p>',
 ];
 const hintContent = document.querySelector('#hint-content');
@@ -2153,8 +2255,32 @@ if (hintContent) {
   showHint(0);
   setInterval(() => showHint(hintIdx + 1), 4500);
   // Tap bubble to advance manually
-  document.querySelector('#hint-bubble').addEventListener('click', () => showHint(hintIdx + 1));
+  document.querySelector('#hint-bubble').addEventListener('click', (e) => {
+    if (e.target.closest('.hint-hide')) return;
+    showHint(hintIdx + 1);
+  });
 }
+
+// ---- Hint show/hide toggle (persists in localStorage) ----
+const hintRow = document.querySelector('#hint-row');
+const hintHideBtn = document.querySelector('#hint-hide');
+const hintShowBtn = document.querySelector('#hint-show');
+const HINT_KEY = 'peg-drop:hint-collapsed';
+function applyHintCollapsed(collapsed) {
+  if (!hintRow) return;
+  hintRow.classList.toggle('collapsed', collapsed);
+}
+applyHintCollapsed(localStorage.getItem(HINT_KEY) === '1');
+if (hintHideBtn) hintHideBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  applyHintCollapsed(true);
+  localStorage.setItem(HINT_KEY, '1');
+});
+if (hintShowBtn) hintShowBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  applyHintCollapsed(false);
+  localStorage.setItem(HINT_KEY, '0');
+});
 
 // ---- INIT ----
 state = { selectedOrb: 'round' };

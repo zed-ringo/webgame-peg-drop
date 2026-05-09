@@ -373,13 +373,22 @@ h1,h2,p,ul{margin:0}
 }
 
 .star{
-  color:#fff9d9;
+  color:transparent;
   font-size:1.36rem;
   line-height:1;
   -webkit-text-stroke:2px var(--line-dark);
   paint-order:stroke fill;
   filter:drop-shadow(0 2px 0 rgba(0,0,0,.28));
-  animation:star-twinkle 2.4s ease-in-out infinite;
+  transition:color .3s ease;
+}
+.star.won{
+  color:#ffe45a;
+  animation:star-twinkle 1.4s ease-in-out infinite, star-pop 380ms cubic-bezier(.2,.9,.2,1.55);
+}
+@keyframes star-pop{
+  0%   {transform:scale(.4) rotate(-30deg)}
+  60%  {transform:scale(1.35) rotate(8deg)}
+  100% {transform:scale(1) rotate(0)}
 }
 
 .star:nth-child(2){
@@ -425,10 +434,9 @@ h1,h2,p,ul{margin:0}
   grid-template-columns:minmax(0,1fr);
   grid-template-rows:minmax(0,1fr) auto;
   gap:8px;
-  /* Vertical overflow allowed so corner mascots / cannons can poke above the
-     canvas-wrap. Horizontal clipped by parent .app's overflow:hidden. */
-  overflow-x:hidden;
-  overflow-y:visible;
+  /* overflow:visible so corner mascots peeking above canvas-wrap render fully.
+     Horizontal clipping is handled by parent .app's overflow:hidden. */
+  overflow:visible;
 }
 
 /* Hint row — えすけーぷがめ + speech bubble explaining peg/ball rules */
@@ -441,6 +449,51 @@ h1,h2,p,ul{margin:0}
   z-index:2;
   min-height:88px;
 }
+.hint-row.collapsed{
+  min-height:0;
+  justify-content:flex-end;
+  padding:0 4px 2px;
+}
+.hint-row.collapsed .hint-mascot,
+.hint-row.collapsed .speech-bubble{
+  display:none;
+}
+.hint-row .hint-show{display:none}
+.hint-row.collapsed .hint-show{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:36px; height:36px;
+  border-radius:50%;
+  border:3px solid var(--line-dark);
+  background:#fff8d8;
+  color:var(--line-dark);
+  font-weight:900;
+  font-size:1.1rem;
+  cursor:pointer;
+  box-shadow:0 3px 0 rgba(0,0,0,.18), 0 6px 10px rgba(20,10,30,.18);
+  padding:0;
+  font-family:inherit;
+}
+.hint-row.collapsed .hint-show:active{transform:translateY(2px)}
+.hint-hide{
+  position:absolute;
+  top:-8px; right:-8px;
+  width:26px; height:26px;
+  border-radius:50%;
+  border:3px solid var(--line-dark);
+  background:#fff;
+  color:var(--line-dark);
+  font-weight:900;
+  font-size:.95rem;
+  line-height:1;
+  cursor:pointer;
+  padding:0;
+  box-shadow:0 2px 0 rgba(0,0,0,.18);
+  font-family:inherit;
+  z-index:3;
+}
+.hint-hide:active{transform:translateY(2px)}
 .hint-mascot{
   width:68px;
   height:68px;
@@ -588,10 +641,11 @@ h1,h2,p,ul{margin:0}
 .canvas-wrap{
   position:relative;
   width:100%;
-  height:100%;
-  min-height:0;
+  /* height:auto so the orange frame hugs the board-shell + canvas; otherwise
+     board-shell stretches to a tall 1fr row leaving empty space below pegs. */
+  align-self:start;
   display:grid;
-  grid-template-rows:minmax(0,1fr);
+  grid-template-rows:auto;
   padding:12px 10px 12px;
   border:5px solid var(--line-dark);
   border-radius:30px;
@@ -602,6 +656,8 @@ h1,h2,p,ul{margin:0}
     inset 0 -8px 0 rgba(150,60,10,.32),
     0 8px 0 rgba(0,0,0,.22),
     0 20px 28px rgba(130,60,0,.26);
+  /* Allow corner mascots to stick out above and around the arcade frame. */
+  overflow:visible;
 }
 
 .canvas-wrap::before{
@@ -630,11 +686,13 @@ h1,h2,p,ul{margin:0}
   padding:0;
   background:transparent;
   box-shadow:none;
-  /* Canvas (width="480" height="540") drives the size: width:100% of parent,
-     height comes from canvas's intrinsic ratio (height:auto). board-bg divs
-     are absolutely positioned and inherit board-shell's natural box. */
+  /* Match canvas intrinsic ratio (480x720, mobile portrait) so board-bg
+     overlays sit exactly where pegs/balls render. width:100% of parent,
+     height locked by aspect. */
   width:100%;
   max-width:100%;
+  aspect-ratio:480 / 720;
+  height:auto;
   margin:0 auto;
   overflow:visible;
 }
@@ -765,37 +823,37 @@ h1,h2,p,ul{margin:0}
 
 .char-mount{
   position:absolute;
-  top:6px;
-  width:64px;
-  height:64px;
+  top:-30px;
+  width:72px;
+  height:72px;
   display:flex;
   align-items:flex-end;
   justify-content:center;
-  flex:0 0 64px;
-  min-width:64px;
-  min-height:64px;
-  max-width:64px;
-  max-height:64px;
+  flex:0 0 72px;
+  min-width:72px;
+  min-height:72px;
+  max-width:72px;
+  max-height:72px;
   flex-shrink:0;
   pointer-events:none;
-  z-index:3;
+  z-index:5;
 }
 
 .char-mount.player{
-  left:6px;
+  left:-12px;
   transform:rotate(-6deg);
 }
 
 .char-mount.enemy{
-  right:6px;
-  width:96px;
-  height:96px;
-  flex-basis:96px;
-  min-width:96px;
-  min-height:96px;
-  max-width:96px;
-  max-height:96px;
-  top:-12px;
+  right:-14px;
+  width:108px;
+  height:108px;
+  flex-basis:108px;
+  min-width:108px;
+  min-height:108px;
+  max-width:108px;
+  max-height:108px;
+  top:-58px;
   transform:rotate(6deg);
 }
 .char-mount.enemy.boss{
@@ -843,6 +901,14 @@ h1,h2,p,ul{margin:0}
   pointer-events:none;
   text-align:center;
   z-index:3;
+  opacity:0;
+  visibility:hidden;
+  transition:opacity .18s ease;
+}
+
+.stage-overlay.visible{
+  opacity:1;
+  visibility:visible;
 }
 
 .stage-overlay .overlay-card{
