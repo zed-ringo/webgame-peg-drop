@@ -638,6 +638,59 @@ h1,h2,p,ul{margin:0}
   text-align:center;
 }
 
+/* Unlock dialog — celebrates new peg/orb unlocks after a full clear */
+.unlock-dialog form{padding:18px 0 32px;gap:18px}
+.unlock-art{width:min(46vw,200px) !important;height:auto !important}
+.unlock-card{
+  background:#fff;
+  border:5px solid var(--line-dark);
+  border-radius:24px;
+  padding:18px 22px 20px;
+  max-width:min(86vw,520px);
+  box-shadow:0 5px 0 rgba(0,0,0,.20),0 10px 22px rgba(20,10,30,.28);
+  text-align:left;
+}
+.unlock-title{
+  margin:0 0 14px;
+  text-align:center;
+  font-size:1.4rem;
+  color:#ff7e3c;
+  -webkit-text-stroke:4px var(--line-dark);
+  paint-order:stroke fill;
+  letter-spacing:.04em;
+  font-weight:900;
+}
+.unlock-list{
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:grid;
+  gap:14px;
+}
+.unlock-item{
+  display:grid;
+  grid-template-columns:48px minmax(0,1fr);
+  gap:12px;
+  align-items:center;
+  font-size:.98rem;
+  font-weight:800;
+  color:#3b1f12;
+  line-height:1.45;
+}
+.unlock-text strong{font-weight:900;color:#ff4f1d}
+.unlock-badge{
+  width:48px; height:48px;
+  border-radius:50%;
+  border:4px solid var(--line-dark);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.4rem;
+  color:#3b1f12;
+  font-weight:900;
+  box-shadow:0 3px 0 rgba(0,0,0,.18);
+}
+.unlock-bomb{background:#ffae3a}
+.unlock-star{background:#ffd84a;color:#9a6e0a}
+
 /* Intro dialog — first-visit how-to-play */
 .intro-dialog form{padding:18px 0 32px;gap:18px}
 .intro-art{
@@ -1051,6 +1104,51 @@ dialog form,
   padding-left:1.2em;
   text-align:left;
 }
+.rules-dialog .rule-list{
+  list-style:none;
+  padding:0;
+  margin:6px 0 4px;
+  display:grid;
+  gap:10px;
+}
+.rules-dialog .rule-section{
+  margin:14px 0 4px;
+  font-size:1.05rem;
+  color:#ff7e3c;
+  -webkit-text-stroke:2.4px var(--line-dark);
+  paint-order:stroke fill;
+  letter-spacing:.08em;
+  text-align:left;
+}
+.rules-dialog .rule-row{
+  display:grid;
+  grid-template-columns:38px minmax(0,1fr);
+  gap:10px;
+  align-items:center;
+  font-size:.92rem;
+  line-height:1.4;
+}
+.rules-dialog .rule-disc{
+  width:38px; height:38px;
+  border-radius:50%;
+  border:3px solid var(--line-dark);
+  display:flex; align-items:center; justify-content:center;
+  font-weight:900;
+  font-size:1rem;
+  color:#1a0a2c;
+  box-shadow:0 2px 0 rgba(0,0,0,.18);
+}
+.rules-dialog .rule-name{display:block;font-weight:900;color:#3b1f12}
+.rules-dialog .rule-desc{display:block;color:#4a2a65;font-size:.86rem}
+.rules-dialog .rule-lock{
+  display:inline-block;
+  margin-left:6px;
+  font-size:.78rem;
+  color:#a04a18;
+  font-weight:800;
+}
+.rules-dialog .rule-locked .rule-disc{filter:grayscale(.8) brightness(.85)}
+.rules-dialog .rule-locked .rule-name{color:#7a5a3e}
 
 dialog menu,
 .rules-dialog menu{

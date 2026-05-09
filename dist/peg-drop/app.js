@@ -86,16 +86,21 @@ const ORBS = {
   round:  { name: 'まる',   color: '#4cb1ff', stroke: '#1f5d99', damp: 0.72, jitMul: 1.0, label: '青ペグ破壊' },
   spike:  { name: 'とげ',   color: '#ff6b7a', stroke: '#a8333f', damp: 0.85, jitMul: 0.7, label: '赤ペグ破壊' },
   drop:   { name: 'しずく', color: '#74d756', stroke: '#2e8a36', damp: 0.55, jitMul: 1.5, label: '緑ペグで分裂' },
+  star:   { name: 'スター', color: '#ffd84a', stroke: '#9a6e0a', damp: 0.78, jitMul: 0.85, label: 'なんでも破壊' },
 };
 
 // Compatibility table: orbType × pegColor → effect
+// Bomb peg explodes on any orb impact (chain-destroys nearby pegs).
 const MATCH = {
-  round:  { white: 'normal', red: 'normal', blue: 'destroy', green: 'normal', heal: 'heal' },
-  spike:  { white: 'normal', red: 'destroy', blue: 'normal', green: 'normal', heal: 'heal' },
-  drop:   { white: 'normal', red: 'normal', blue: 'normal', green: 'split', heal: 'heal' },
+  round:  { white: 'normal', red: 'normal',  blue: 'destroy', green: 'normal',  heal: 'heal', bomb: 'bomb' },
+  spike:  { white: 'normal', red: 'destroy', blue: 'normal',  green: 'normal',  heal: 'heal', bomb: 'bomb' },
+  drop:   { white: 'normal', red: 'normal',  blue: 'normal',  green: 'split',   heal: 'heal', bomb: 'bomb' },
+  star:   { white: 'normal', red: 'destroy', blue: 'destroy', green: 'destroy', heal: 'heal', bomb: 'bomb' },
 };
-const DAMAGE = { normal: 1, destroy: 2, split: 1, heal: 0 }; // heal handled separately
+const DAMAGE = { normal: 1, destroy: 2, split: 1, heal: 0, bomb: 2 }; // heal/bomb handled with custom branches
 const HEAL_AMOUNT = 2;
+const BOMB_RADIUS = 62;       // chain-destroy radius for bomb peg
+const BOMB_DAMAGE_CAP = 9;    // damage ceiling for bomb chain
 
 // Peg colors locked to orb colors — same blue, same red, same green.
 // "white" = neutral peg (no orb matches it) → desaturated gray so the player
@@ -107,6 +112,7 @@ const PEG_FILL = {
   blue:  '#4cb1ff',  // matches round orb
   green: '#74d756',  // matches drop orb
   heal:  '#ff97c2',  // pink heart-pink
+  bomb:  '#ffae3a',  // explosive — orange-gold body, X icon overlay
 };
 // Per-color bounce factor — multiplied with the ORB's damp on normal bounce
 // so pegs visually feel different. White (neutral) = bounciest pinball pegs;
@@ -117,6 +123,7 @@ const PEG_BOUNCE = {
   blue:  0.80,
   green: 0.80,
   heal:  0.55,
+  bomb:  0.95,
 };
 
 // Stage 1 = teaching stage. ONLY blue + gray (white) pegs. No HEAL.
@@ -207,6 +214,18 @@ function applyLapDifficulty(baseCfg, playLap = 0) {
       - (baseCfg.enemySize === 'boss' ? lap * LAP_DIFFICULTY.bossAiFasterPerLap : 0)
   );
   const pegPalette = [...baseCfg.pegPalette];
+  // Bomb peg unlocks at lap 1 — replaces 1-2 white (filler) pegs so density
+  // stays similar but the explosive variant introduces real strategy.
+  if (lap >= BOMB_PEG_LAP) {
+    const bombs = Math.min(2, lap);
+    let inserted = 0;
+    for (let i = 0; i < pegPalette.length && inserted < bombs; i++) {
+      if (pegPalette[i] === 'white') {
+        pegPalette[i] = 'bomb';
+        inserted++;
+      }
+    }
+  }
   if (baseCfg.enemySize === 'boss' && lap >= 5) {
     const whiteIdx = pegPalette.indexOf('white');
     if (whiteIdx >= 0) pegPalette[whiteIdx] = 'green';
@@ -371,8 +390,50 @@ function save(key, v) {
   localStorage.setItem(key, String(v));
 }
 
-function buildBoard(palette, stageIdx = 0) {
-  const layout = BOARD_LAYOUTS[stageIdx] || BOARD_LAYOUTS[0];
+// Deterministic LCG so a given (lap, stageIdx) always produces the same
+// augmented layout — players can learn it round-to-round, but it differs
+// between loops.
+function lapRng(lap, stageIdx) {
+  let seed = ((lap + 1) * 9301 + (stageIdx + 1) * 49297 + 1729) | 0;
+  return function () {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed / 0x7fffffff;
+  };
+}
+
+function augmentLayoutForLap(base, lap, stageIdx) {
+  if (lap <= 0) return base.map(([x, y]) => [x, y]);
+  const rng = lapRng(lap, stageIdx);
+  // Slight horizontal jitter so the field doesn't feel identical to lap 0.
+  const jitterMag = Math.min(8, 2 + lap);
+  const jittered = base.map(([x, y]) => {
+    const dx = Math.round((rng() - 0.5) * jitterMag);
+    return [Math.max(20, Math.min(BOARD_W - 20, x + dx)), y];
+  });
+  // Add procedural extras at lap-scaled count, with min-distance to keep
+  // the board readable. Cap at +8 pegs so density stays sane.
+  const extras = Math.min(8, lap * 2);
+  const out = jittered.slice();
+  for (let i = 0; i < extras; i++) {
+    for (let t = 0; t < 18; t++) {
+      const px = 22 + Math.round(rng() * (BOARD_W - 44));
+      const py = LAYOUT_Y_TOP + Math.round(rng() * (LAYOUT_Y_BOT - LAYOUT_Y_TOP));
+      let ok = true;
+      for (const [ex, ey] of out) {
+        if (Math.hypot(px - ex, py - ey) < 28) { ok = false; break; }
+      }
+      if (ok) {
+        out.push([px, py]);
+        break;
+      }
+    }
+  }
+  return out;
+}
+
+function buildBoard(palette, stageIdx = 0, lap = 0) {
+  const baseLayout = BOARD_LAYOUTS[stageIdx] || BOARD_LAYOUTS[0];
+  const layout = augmentLayoutForLap(baseLayout, lap, stageIdx);
   return layout.map(([x, y], i) => ({
     x, y,
     color: palette[i % palette.length],
@@ -401,14 +462,24 @@ const ORB_POOL_PER_STAGE = [
   ['round', 'spike', 'drop'],
 ];
 
-function generateQueueOrb(stageIdx = 0) {
-  const pool = ORB_POOL_PER_STAGE[stageIdx] || ORB_POOL_PER_STAGE[0];
+// Star orb (wild) unlocks once the player has cleared the adventure twice.
+const STAR_ORB_LAP = 2;
+// Bomb peg unlocks after the first clear (lap 1).
+const BOMB_PEG_LAP = 1;
+
+function getOrbPoolFor(stageIdx, lap = 0) {
+  const base = ORB_POOL_PER_STAGE[stageIdx] || ORB_POOL_PER_STAGE[0];
+  return lap >= STAR_ORB_LAP ? [...base, 'star'] : base;
+}
+
+function generateQueueOrb(stageIdx = 0, lap = 0) {
+  const pool = getOrbPoolFor(stageIdx, lap);
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-function fillQueue(queue, minSize = 8, stageIdx = 0) {
+function fillQueue(queue, minSize = 8, stageIdx = 0, lap = 0) {
   while (queue.length < minSize) {
-    queue.push(generateQueueOrb(stageIdx));
+    queue.push(generateQueueOrb(stageIdx, lap));
   }
 }
 
@@ -485,8 +556,8 @@ function startStage(idx) {
   const cfg = applyLapDifficulty(STAGES[idx], playLap);
   const playerQueue = [];
   const enemyQueue = [];
-  fillQueue(playerQueue, 8, idx);
-  fillQueue(enemyQueue, 8, idx);
+  fillQueue(playerQueue, 8, idx, playLap);
+  fillQueue(enemyQueue, 8, idx, playLap);
   state = {
     phase: 'countdown', // countdown / aim / dropping / resolving / ended
     stageIdx: idx,
@@ -501,8 +572,8 @@ function startStage(idx) {
     aimX: BOARD_W / 2,
     enemyAimX: BOARD_W / 2,
     enemyCannonX: BOARD_W / 2,
-    playerPegs: buildBoard(shufflePalette(cfg.pegPalette), idx),
-    enemyPegs: buildBoard(shufflePalette(cfg.pegPalette), idx),
+    playerPegs: buildBoard(shufflePalette(cfg.pegPalette), idx, playLap),
+    enemyPegs: buildBoard(shufflePalette(cfg.pegPalette), idx, playLap),
     playerBalls: [],
     enemyBalls: [],
     pegBreakAnims: [],
@@ -585,7 +656,7 @@ function playerDrop() {
   if (state.phase !== 'aim') return;
   if (state.queue.length === 0) return;
   const orb = state.queue.shift();
-  fillQueue(state.queue, 8, state.stageIdx);
+  fillQueue(state.queue, 8, state.stageIdx, state.playLap || 0);
   dropBall('player', state.aimX, orb);
   // Enemy drops simultaneously (lockstep)
   enemyDropResponse();
@@ -598,7 +669,7 @@ function playerDrop() {
 function enemyDropResponse() {
   // Use enemy queue (visual consistency with player)
   const orbType = state.enemyQueue.shift();
-  fillQueue(state.enemyQueue, 8, state.stageIdx);
+  fillQueue(state.enemyQueue, 8, state.stageIdx, state.playLap || 0);
   const x = pickAIPosition(orbType);
   // Tell drawCannon where the enemy cannon should glide to so the ball
   // visibly drops from the cannon mouth, not the board center.
@@ -681,6 +752,65 @@ function updateBalls(balls, pegs, side, dt) {
         // Determine effect
         const effect = MATCH[b.orb][p.color];
         const isMatch = effect !== 'normal';
+        if (effect === 'bomb') {
+          // Bomb peg explodes: chain-destroy nearby pegs and damage opponent.
+          const chained = [];
+          for (const q of pegs) {
+            if (!q.alive || q === p) continue;
+            const ddx = q.x - p.x, ddy = q.y - p.y;
+            if (Math.hypot(ddx, ddy) <= BOMB_RADIUS) chained.push(q);
+          }
+          const totalDmg = Math.min(BOMB_DAMAGE_CAP, DAMAGE.bomb + chained.length);
+          const oppSide = side === 'player' ? 'enemy' : 'player';
+          const sourceX = p.x + getBoardX(side);
+          if (side === 'player') {
+            state.enemyHP = Math.max(0, state.enemyHP - totalDmg);
+            state.enemyHitFlash = 0.45;
+            spawnDamagePopup(sourceX, p.y, totalDmg, PALETTE.damageText, true);
+            spawnMatchText(sourceX, p.y - 22, 'BOOM!', '#ff8d3a');
+            flashMascot('attack', 380, 'attack');
+            flashClass(enemySlot, 'damage', 380);
+            flashEnemyDamageSprite();
+            triggerPlateReaction('enemy');
+            state.slowMo = 0.08;
+          } else {
+            state.playerHP = Math.max(0, state.playerHP - totalDmg);
+            state.playerHitFlash = 0.45;
+            state.screenShake = 0.7;
+            state.lastTakeDmg = totalDmg;
+            spawnDamagePopup(sourceX, p.y, totalDmg, PALETTE.damageText, true);
+            spawnMatchText(sourceX, p.y - 22, 'BOOM!', '#ff8d3a');
+            flashMascot('damage', 480, 'damage');
+            triggerPlateReaction('player');
+          }
+          state.attackBeams.push({
+            x0: sourceX, y0: p.y,
+            x1: side === 'player' ? CANVAS_W - 14 : 14, y1: 0,
+            color: side === 'player' ? PALETTE.player : PALETTE.enemy,
+            t: 0, dur: 0.30,
+          });
+          setTimeout(() => spawnHpDamagePopup(oppSide, totalDmg, false), 240);
+          // Destroy chained pegs (no extra individual damage — already pooled)
+          for (const q of chained) {
+            q.alive = false;
+            q.hitFlash = 0.20;
+            state.pegBreakAnims.push({ x: q.x + getBoardX(side), y: q.y, t: 0, dur: 0.50, color: q.color });
+          }
+          // Bomb peg itself
+          p.alive = false;
+          p.hitFlash = 0.40;
+          state.pegBreakAnims.push({ x: p.x + getBoardX(side), y: p.y, t: 0, dur: 0.55, color: 'bomb' });
+          if (!state.chainFrame) state.chainFrame = {};
+          if (!state.chainFrame[side]) state.chainFrame[side] = { count: 0, x: 0, y: 0 };
+          state.chainFrame[side].count += 1 + chained.length;
+          state.chainFrame[side].x += sourceX;
+          state.chainFrame[side].y += p.y;
+          updateHUD();
+          // Ball passes through with strong horizontal kick
+          b.vy *= 0.7;
+          b.vx += (Math.random() - 0.5) * 110;
+          break; // 1 collision per frame
+        }
         if (effect === 'heal') {
           // Heal own side instead of damaging opponent
           if (side === 'player') {
@@ -901,14 +1031,14 @@ function restartRound() {
   state.playerHP = PLAYER_HP_MAX;
   state.enemyHP = adjusted.enemyHP;
   state.enemyHPMax = adjusted.enemyHP;
-  state.playerPegs = buildBoard(shufflePalette(adjusted.pegPalette), state.stageIdx);
-  state.enemyPegs = buildBoard(shufflePalette(adjusted.pegPalette), state.stageIdx);
+  state.playerPegs = buildBoard(shufflePalette(adjusted.pegPalette), state.stageIdx, state.playLap || 0);
+  state.enemyPegs = buildBoard(shufflePalette(adjusted.pegPalette), state.stageIdx, state.playLap || 0);
   state.playerBalls = [];
   state.enemyBalls = [];
   state.queue = [];
   state.enemyQueue = [];
-  fillQueue(state.queue, 8, state.stageIdx);
-  fillQueue(state.enemyQueue, 8, state.stageIdx);
+  fillQueue(state.queue, 8, state.stageIdx, state.playLap || 0);
+  fillQueue(state.enemyQueue, 8, state.stageIdx, state.playLap || 0);
   state.phase = 'aim';
   state.aimX = BOARD_W / 2;
   state.enemyActClock = 0;
@@ -1004,7 +1134,7 @@ function regenIfEmpty(pegs, palette) {
   const alive = pegs.filter(p => p.alive).length;
   if (alive < 8) {
     // Regenerate all pegs (fresh palette shuffle, same stage layout)
-    const fresh = buildBoard(shufflePalette(palette), state.stageIdx);
+    const fresh = buildBoard(shufflePalette(palette), state.stageIdx, state.playLap || 0);
     for (let i = 0; i < pegs.length; i++) {
       pegs[i].color = fresh[i].color;
       pegs[i].alive = true;
@@ -1990,6 +2120,38 @@ function renderBoard(side, x0, pegs, balls, hitFlash) {
       ctx.moveTo(p.x, p.y - r * 0.55); ctx.lineTo(p.x, p.y + r * 0.55);
       ctx.stroke();
       ctx.lineCap = 'butt';
+    } else if (p.color === 'bomb') {
+      // Bomb peg — black X with sparking pulse so the player reads "danger".
+      const pulse = 0.85 + 0.15 * Math.sin(Date.now() / 220 + p.x);
+      ctx.strokeStyle = '#1a0a2c';
+      ctx.lineWidth = 2.8;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(p.x - r * 0.46, p.y - r * 0.46);
+      ctx.lineTo(p.x + r * 0.46, p.y + r * 0.46);
+      ctx.moveTo(p.x + r * 0.46, p.y - r * 0.46);
+      ctx.lineTo(p.x - r * 0.46, p.y + r * 0.46);
+      ctx.stroke();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(p.x - r * 0.46, p.y - r * 0.46);
+      ctx.lineTo(p.x + r * 0.46, p.y + r * 0.46);
+      ctx.moveTo(p.x + r * 0.46, p.y - r * 0.46);
+      ctx.lineTo(p.x - r * 0.46, p.y + r * 0.46);
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+      // Tiny spark dots around the rim
+      const sparkA = 0.35 + 0.25 * Math.sin(Date.now() / 180 + p.y);
+      ctx.fillStyle = `rgba(255,235,120,${sparkA})`;
+      for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI * 2 + Date.now() / 360;
+        const sx = p.x + Math.cos(a) * (r + 3) * pulse;
+        const sy = p.y + Math.sin(a) * (r + 3) * pulse;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 1.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
     } else if (r >= 5.0) {
       // Tiny puyo eyes — small black dots inside white
       const eyeR = Math.max(1.0, r * 0.20);
@@ -2124,6 +2286,31 @@ function renderBoard(side, x0, pegs, balls, hitFlash) {
     ctx.arc(0, BALL_R * 0.40, BALL_R * 0.18, 0.2 * Math.PI, 0.8 * Math.PI);
     ctx.stroke();
     ctx.lineCap = 'butt';
+    // Star orb decorations — sparkle ring + 5-point star on the body
+    if (b.orb === 'star') {
+      const t = Date.now() / 320;
+      ctx.save();
+      ctx.rotate(t * 0.4);
+      // 4 sparkles around the ball
+      ctx.fillStyle = '#fff7c4';
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        const rr = BALL_R + 3.2 + Math.sin(t + i) * 1.2;
+        const sx = Math.cos(a) * rr;
+        const sy = Math.sin(a) * rr;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 1.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+      // 5-point star centered on the ball, behind eyes are already drawn so
+      // skip drawing star body — instead, just a yellow outline ring.
+      ctx.strokeStyle = '#9a6e0a';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.arc(0, 0, BALL_R - 1.2, 0, Math.PI * 2);
+      ctx.stroke();
+    }
     // Spike orb decorations — small angular flames at 6 points
     if (b.orb === 'spike') {
       ctx.strokeStyle = '#1a0a2c';
@@ -2187,18 +2374,49 @@ function onFinalVictory() {
   hideOverlay();
   const wins = load('peg-drop-vs-wins', 0) + 1;
   save('peg-drop-vs-wins', wins);
-  // Difficulty uses the raw clear count; cannon visuals still cycle in render().
-  localStorage.setItem('peg-drop:clears', String(getStoredClearCount() + 1));
-  // Use the dedicated celebrate dialog (same style as stage-clear modal,
-  // but with "もう一度" CTA). The plain result dialog was easy to miss
-  // behind the canvas overlay.
+  const newClears = getStoredClearCount() + 1;
+  localStorage.setItem('peg-drop:clears', String(newClears));
   const finalDlg = document.querySelector('#final-victory-dialog');
   const onClose = () => {
     finalDlg.removeEventListener('close', onClose);
-    if (finalDlg.returnValue === 'restart') startStage(0);
+    showUnlockThenRestart(newClears);
   };
   finalDlg.addEventListener('close', onClose);
   if (finalDlg.showModal) finalDlg.showModal();
+}
+
+// Detect unlocks crossed by the *new* clear count and surface them before the
+// next adventure starts. Lap 1 introduces ボムペグ; lap 2 introduces スター玉.
+function showUnlockThenRestart(lap) {
+  const dlg = document.querySelector('#unlock-dialog');
+  const unlocks = [];
+  if (lap === BOMB_PEG_LAP) unlocks.push('bomb');
+  if (lap === STAR_ORB_LAP) unlocks.push('star');
+  if (!dlg || unlocks.length === 0) {
+    startStage(0);
+    return;
+  }
+  const list = dlg.querySelector('.unlock-list');
+  if (list) {
+    list.innerHTML = '';
+    for (const k of unlocks) {
+      const li = document.createElement('li');
+      li.className = 'unlock-item';
+      if (k === 'bomb') {
+        li.innerHTML = '<span class="unlock-badge unlock-bomb">💥</span><div class="unlock-text"><strong>ボムペグ</strong>とうじょう！どの玉が当たっても <strong>大ばくはつ</strong>、まわりのペグもまきこんで一気にダメージがめ！</div>';
+      } else if (k === 'star') {
+        li.innerHTML = '<span class="unlock-badge unlock-star">★</span><div class="unlock-text"><strong>スター玉</strong>とうじょう！どの色のペグも壊せる <strong>万能玉</strong>がめ。たまに出るから狙いどころが大事！</div>';
+      }
+      list.appendChild(li);
+    }
+  }
+  const onClose = () => {
+    dlg.removeEventListener('close', onClose);
+    startStage(0);
+  };
+  dlg.addEventListener('close', onClose);
+  if (dlg.showModal) dlg.showModal();
+  else startStage(0);
 }
 
 function onDefeat() {
