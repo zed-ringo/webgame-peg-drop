@@ -46,6 +46,43 @@
     if (introDialog && introDialog.showModal && !introDialog.open) introDialog.showModal();
   });
 
+  // Step navigation inside the intro/help dialog. Steps are absolute
+  // siblings inside .intro-stage; only the active one is visible. Reset to
+  // step 0 on dialog close so the next open starts fresh.
+  if (introDialog) {
+    const steps = Array.from(introDialog.querySelectorAll('.intro-step'));
+    const dots = introDialog.querySelector('.intro-dots');
+    const prevBtn = introDialog.querySelector('.intro-prev');
+    const nextBtn = introDialog.querySelector('.intro-next');
+    const playBtn = introDialog.querySelector('.intro-play');
+    let cur = 0;
+
+    if (dots) {
+      dots.innerHTML = steps.map(() => `<span class="intro-dot"></span>`).join('');
+    }
+    const dotEls = dots ? Array.from(dots.querySelectorAll('.intro-dot')) : [];
+
+    function render() {
+      steps.forEach((s, i) => s.classList.toggle('active', i === cur));
+      dotEls.forEach((d, i) => d.classList.toggle('on', i === cur));
+      const isFirst = cur === 0;
+      const isLast = cur === steps.length - 1;
+      if (prevBtn) prevBtn.style.visibility = isFirst ? 'hidden' : '';
+      if (nextBtn) nextBtn.hidden = isLast;
+      if (playBtn) playBtn.hidden = !isLast;
+    }
+
+    if (prevBtn) prevBtn.addEventListener('click', () => {
+      if (cur > 0) { cur--; render(); }
+    });
+    if (nextBtn) nextBtn.addEventListener('click', () => {
+      if (cur < steps.length - 1) { cur++; render(); }
+    });
+    introDialog.addEventListener('close', () => { cur = 0; render(); });
+
+    render();
+  }
+
   // "📖" — opens the peg/orb encyclopedia (rules-dialog).
   const rulesDialog = document.createElement('dialog');
   rulesDialog.className = 'rules-dialog';

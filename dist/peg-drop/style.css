@@ -714,24 +714,24 @@ h1,h2,p,ul{margin:0}
   box-shadow:0 5px 0 rgba(0,0,0,.20), 0 10px 22px rgba(20,10,30,.28);
 }
 .intro-title{
-  margin:0 0 14px;
+  margin:0 0 12px;
   text-align:center;
-  font-size:1.4rem;
+  font-size:1.2rem;
   color:#ff7e3c;
-  -webkit-text-stroke:4px var(--line-dark);
+  -webkit-text-stroke:3px var(--line-dark);
   paint-order:stroke fill;
   letter-spacing:.04em;
   font-weight:900;
 }
 .intro-steps{
   margin:0;
-  padding-left:1.5em;
+  padding-left:1.4em;
   display:grid;
-  gap:10px;
-  font-size:1rem;
+  gap:8px;
+  font-size:.88rem;
   font-weight:800;
   color:#3b1f12;
-  line-height:1.45;
+  line-height:1.4;
   text-align:left;
 }
 .intro-steps li{text-align:left}
@@ -740,26 +740,31 @@ h1,h2,p,ul{margin:0}
 .intro-steps strong{font-weight:900}
 .intro-steps strong.hot{color:#ff4f1d}
 
-/* Intro dialog — full tutorial sections + embedded encyclopedia */
-.intro-scroll{
-  max-height:60svh;
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-  padding-right:6px;
-  margin:8px -2px 0;
-  mask-image:linear-gradient(180deg,
-    transparent 0,
-    #000 12px,
-    #000 calc(100% - 12px),
-    transparent 100%);
+/* Intro dialog — step-by-step tutorial. All steps share one grid cell so
+   the card height is the tallest step (no jump between steps). */
+.intro-stage{
+  display:grid;
+  margin:6px 0 6px;
 }
-.intro-sec{margin:0 0 16px}
-.intro-sec:last-child{margin-bottom:0}
+.intro-step{
+  grid-column:1;
+  grid-row:1;
+  text-align:left;
+  visibility:hidden;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .2s ease;
+}
+.intro-step.active{
+  visibility:visible;
+  pointer-events:auto;
+  opacity:1;
+}
 .intro-sec-h{
-  margin:6px 0 8px;
-  font-size:1.05rem;
+  margin:0 0 8px;
+  font-size:.98rem;
   color:#ff7e3c;
-  -webkit-text-stroke:2.4px var(--line-dark);
+  -webkit-text-stroke:2.2px var(--line-dark);
   paint-order:stroke fill;
   letter-spacing:.04em;
   text-align:left;
@@ -769,6 +774,7 @@ h1,h2,p,ul{margin:0}
   margin:0;
   color:#3b1f12;
   font-weight:700;
+  font-size:.88rem;
   line-height:1.5;
   text-align:left;
 }
@@ -782,6 +788,7 @@ h1,h2,p,ul{margin:0}
   text-align:left;
   color:#3b1f12;
   font-weight:700;
+  font-size:.88rem;
   line-height:1.45;
 }
 .intro-tips li::marker{color:#ff7e3c}
@@ -789,14 +796,14 @@ h1,h2,p,ul{margin:0}
 .intro-tips strong.hot{color:#ff4f1d}
 
 .intro-lead{
-  margin:0 0 14px;
-  padding:10px 14px;
+  margin:0 0 8px;
+  padding:8px 12px;
   background:rgba(255,219,140,.45);
   border:3px solid var(--line-dark);
-  border-radius:14px;
+  border-radius:12px;
   color:#3b1f12;
   font-weight:900;
-  font-size:1.02rem;
+  font-size:.92rem;
   line-height:1.4;
   text-align:left;
   box-shadow:inset 0 2px 0 rgba(255,255,255,.6);
@@ -805,13 +812,60 @@ h1,h2,p,ul{margin:0}
 
 .intro-foot{
   margin:8px 0 0;
-  font-size:.85rem;
+  font-size:.78rem;
   color:#6a4a2c;
   font-weight:700;
   text-align:left;
   line-height:1.4;
 }
 .intro-foot strong{color:#ff7e3c;font-weight:900}
+
+.intro-dots{
+  display:flex;
+  justify-content:center;
+  gap:8px;
+  margin:6px 0 0;
+}
+.intro-dot{
+  width:10px;height:10px;
+  border-radius:50%;
+  background:rgba(120,80,40,.22);
+  border:2px solid rgba(120,80,40,.5);
+  transition:transform .18s ease, background .18s ease;
+}
+.intro-dot.on{
+  background:#ff8f1b;
+  border-color:var(--line-dark);
+  transform:scale(1.2);
+}
+
+.intro-menu{
+  display:flex;
+  flex-direction:row;
+  flex-wrap:nowrap;
+  gap:10px;
+  justify-content:center;
+  align-items:center;
+}
+.intro-menu button{white-space:nowrap}
+.intro-menu .intro-prev{
+  min-width:74px;
+  padding:8px 14px 10px;
+  font-size:.86rem;
+  background:linear-gradient(180deg,#ffffff 0%, #ffe6c0 50%, #ffc77a 100%);
+}
+.intro-menu .intro-next{
+  min-width:104px;
+  padding:10px 18px 12px;
+  font-size:.96rem;
+}
+/* Keep the final CTA prominent but not so tall that the row wraps. */
+.intro-menu .intro-play.big{
+  min-height:auto;
+  padding:11px 24px 13px;
+  font-size:1.05rem;
+  border-width:4px;
+}
 
 .rules-content .rule-section{
   margin:8px 0 4px;
