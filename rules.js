@@ -37,7 +37,6 @@
   const introDialog = document.querySelector('#intro-dialog');
   const helpBtn = document.createElement('button');
   helpBtn.type = 'button';
-  helpBtn.textContent = '?';
   helpBtn.title = 'あそびかた';
   helpBtn.setAttribute('aria-label', 'あそびかた');
   helpBtn.className = 'icon-btn icon-btn-help';
