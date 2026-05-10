@@ -111,7 +111,7 @@ const SFX_FILES = {
   roundWin:   ['round-win.mp3',  0.70],
   stageClear: ['stage-clear.mp3',0.78],
   victory:    ['victory.mp3',    0.85],
-  lose:       ['lose.ogg',       0.65],
+  lose:       ['lose.mp3',       0.65],
   defeat:     ['defeat.ogg',     0.55],
 };
 
@@ -1385,6 +1385,7 @@ function restartRound() {
   setMascotSprite('idle');
   setPlayerState('idle');
   updateHUD();
+  updateQueueUI();
 }
 
 function updateRoundStars() {
