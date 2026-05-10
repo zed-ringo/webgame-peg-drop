@@ -102,6 +102,9 @@ h1,h2,p,ul{margin:0}
 }
 
 .hud,.vs-bar,.stage,dialog{position:relative;z-index:1}
+/* HUD must paint over .vs-bar / .stage so popups (volume slider, etc.)
+   anchored to HUD buttons stay visible when they extend downward. */
+.hud{z-index:5}
 
 .hud{
   display:flex;
@@ -228,6 +231,82 @@ h1,h2,p,ul{margin:0}
 .icon-btn-help{background:url("assets/btn-help.svg") center/contain no-repeat}
 .icon-btn-pause{background:url("assets/btn-pause.svg") center/contain no-repeat}
 .icon-btn-book{background:url("assets/btn-book.svg") center/contain no-repeat}
+.icon-btn-sound{background:transparent;overflow:visible}
+.icon-btn-sound svg{
+  display:block;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+}
+.icon-btn-sound[data-level="0"] .snd-wave-1,
+.icon-btn-sound[data-level="0"] .snd-wave-2{display:none}
+.icon-btn-sound[data-level="1"] .snd-wave-2,
+.icon-btn-sound[data-level="1"] .snd-x,
+.icon-btn-sound[data-level="2"] .snd-x{display:none}
+
+/* Sound button wrapper that anchors the volume popup above it. */
+.sound-control{position:relative;display:inline-flex}
+.sound-popup{
+  position:absolute;
+  top:calc(100% + 10px);
+  right:0;
+  display:none;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  background:linear-gradient(180deg,#fff7d6 0%, #ffd24a 100%);
+  border:4px solid var(--line-dark);
+  border-radius:14px;
+  box-shadow:0 5px 0 rgba(0,0,0,.20), 0 10px 18px rgba(40,15,0,.28);
+  z-index:1000;
+  white-space:nowrap;
+}
+.sound-popup.open{display:inline-flex}
+/* Tail/arrow pointing up toward the button */
+.sound-popup::after{
+  content:"";
+  position:absolute;
+  right:18px;
+  top:-12px;
+  width:0;height:0;
+  border:8px solid transparent;
+  border-bottom-color:var(--line-dark);
+}
+.sound-slider{
+  -webkit-appearance:none;
+  appearance:none;
+  width:130px;
+  height:8px;
+  background:#fff;
+  border:2px solid var(--line-dark);
+  border-radius:999px;
+  outline:none;
+  margin:0;
+}
+.sound-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  appearance:none;
+  width:18px;height:18px;
+  border-radius:50%;
+  background:linear-gradient(180deg,#fff,#ff8f1b);
+  border:3px solid var(--line-dark);
+  cursor:pointer;
+  box-shadow:0 2px 0 rgba(0,0,0,.2);
+}
+.sound-slider::-moz-range-thumb{
+  width:18px;height:18px;
+  border-radius:50%;
+  background:#ff8f1b;
+  border:3px solid var(--line-dark);
+  cursor:pointer;
+}
+.sound-pct{
+  font-weight:900;
+  font-size:.84rem;
+  color:#3b1f12;
+  min-width:24px;
+  text-align:right;
+}
 
 .vs-bar{
   display:grid;
@@ -691,6 +770,7 @@ h1,h2,p,ul{margin:0}
 }
 .unlock-bomb{background:#ffae3a}
 .unlock-star{background:#ffd84a;color:#9a6e0a}
+.unlock-reset{background:#3ee0d4;color:#0e4a4a}
 
 /* Intro dialog — first-visit how-to-play */
 .intro-dialog form{padding:18px 0 32px;gap:18px}
@@ -973,6 +1053,75 @@ h1,h2,p,ul{margin:0}
   max-height:100%;
 }
 
+/* "NEXT" preview between the two boards. Sits in the central 8.33% gap
+   above the boards so the player can plan their next shot. Pointer-events
+   off so taps still go through to the player board. */
+.next-orb-slot{
+  position:absolute;
+  left:50%;
+  top:3.5%;
+  transform:translateX(-50%);
+  z-index:3;
+  pointer-events:none;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:3px;
+}
+.next-orb-cap{
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.06em;
+  color:#fff;
+  background:#1a0a2c;
+  border:2px solid #1a0a2c;
+  border-radius:6px;
+  padding:1px 5px 2px;
+  line-height:1;
+  -webkit-text-stroke:0;
+  paint-order:fill;
+  white-space:nowrap;
+  font-family:'M PLUS Rounded 1c','Hiragino Maru Gothic ProN',ui-rounded,system-ui,sans-serif;
+}
+.next-orb-stack{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:3px;
+}
+.next-orb-disc{
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  border:2.5px solid #1a0a2c;
+  background:#4cb1ff;
+  box-shadow:
+    inset 0 -3px 0 rgba(0,0,0,.18),
+    inset 0 2px 0 rgba(255,255,255,.5),
+    0 2px 0 rgba(0,0,0,.28);
+  transition:background-color .15s ease;
+  position:relative;
+}
+/* The first (=immediate next) orb in the stack is slightly bigger so the
+   player's eye lands on it first. The rest fade subtly to imply "later". */
+.next-orb-stack > .next-orb-disc:first-child{
+  width:26px;
+  height:26px;
+  border-width:3px;
+}
+.next-orb-stack > .next-orb-disc:nth-child(n+5){opacity:.92}
+.next-orb-stack > .next-orb-disc:nth-child(n+8){opacity:.82}
+.next-orb-disc::after{
+  content:"";
+  position:absolute;
+  left:18%;
+  top:14%;
+  width:32%;
+  height:24%;
+  border-radius:50%;
+  background:rgba(255,255,255,.55);
+}
+
 /* CSS-rendered playable boards. Sit beneath the transparent canvas so balls
    and pegs (canvas-drawn) appear inside the colored fields. Coordinates use
    percentages of board-shell, matching canvas physics rectangle:
@@ -1051,6 +1200,20 @@ h1,h2,p,ul{margin:0}
 #canvas{
   position:relative;
   z-index:1;
+}
+
+/* HP-driven damage visual: as --hp-frac drops from 1 → 0, the board
+   simply darkens and slightly desaturates. No cracks, no tint, no shake.
+   Variables default to 1 so boards render normally before app.js wires
+   them. */
+.board-bg-player,
+.board-bg-enemy{
+  --hp-frac:1;
+  --dmg:calc(1 - var(--hp-frac));
+  transition:filter .35s ease;
+  filter:
+    brightness(calc(1 - var(--dmg) * 0.42))
+    saturate(calc(1 - var(--dmg) * 0.35));
 }
 
 .corner-pop{

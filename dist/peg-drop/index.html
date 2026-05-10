@@ -20,7 +20,6 @@
             <span class="stage-pill-label">STAGE</span>
             <strong id="stage-num">1/3</strong>
           </span>
-          <button id="reset" class="icon-btn icon-btn-power" title="最初から" aria-label="最初から"></button>
         </div>
       </section>
       <section class="vs-bar">
@@ -46,6 +45,10 @@
             <div class="board-bg board-bg-player" aria-hidden="true"></div>
             <div class="board-bg board-bg-enemy" aria-hidden="true"></div>
             <canvas id="canvas" width="480" height="720"></canvas>
+            <div class="next-orb-slot" aria-hidden="true">
+              <span class="next-orb-cap">NEXT</span>
+              <div class="next-orb-stack" id="next-orb-stack"></div>
+            </div>
           </div>
           <div class="char-mount vs-portrait player">
             <img id="mascot-img" src="assets/turtle-idle.png" alt="自分" />

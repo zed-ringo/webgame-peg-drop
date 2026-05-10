@@ -8,6 +8,7 @@
     { color:'#74d756', name:'緑ペグ', desc:'しずく玉で SPLIT、玉が分裂するがめ' },
     { color:'#c8c0d4', name:'グレーペグ', desc:'どの玉でも 1 ダメージの中継ペグがめ' },
     { color:'#ff97c2', name:'紫ペグ', desc:'当てると自分の HP が +2 回復するがめ', icon:'＋' },
+    { color:'#3ee0d4', name:'リセットペグ', desc:'当たると消えていたペグが全部 復活がめ〜！たまに出てくる逆転の一手', icon:'↻' },
     { color:'#ffae3a', name:'ボムペグ', desc:'どの玉でも当たると大ばくはつ、まわりも巻きこむがめ！', icon:'×', unlockLap: BOMB_LAP },
   ];
   const orbs = [

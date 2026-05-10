@@ -89,15 +89,258 @@ const ORBS = {
   star:   { name: 'スター', color: '#ffd84a', stroke: '#9a6e0a', damp: 0.78, jitMul: 0.85, label: 'なんでも破壊' },
 };
 
+// ----- Sound FX (Kenney CC0 packs; assets/sfx/*.ogg) --------------------
+// Each named sfx plays a single curated audio file. Files are prefetched as
+// ArrayBuffers on script load; AudioContext is created on the first user
+// gesture (per-browser autoplay policy) at which point the buffers are
+// decoded and become playable. Master bus = compressor → master gain so
+// the mute toggle / volume levels work uniformly across all clips.
+const SOUND_VOLUME_KEY = 'peg-drop:sound-vol';
+// File table: name → asset filename and per-clip gain trim (different
+// source files have different LUFS, this normalizes them by ear).
+const SFX_FILES = {
+  shoot:      ['shoot.ogg',      0.55],
+  pegHit:     ['peg-hit.ogg',    0.45],
+  pegBreak:   ['peg-break.ogg',  0.70],
+  split:      ['split.ogg',      0.55],
+  heal:       ['heal.ogg',       0.65],
+  bomb:       ['bomb.ogg',       0.30],
+  reset:      ['reset.ogg',      0.65],
+  dealHit:    ['deal-hit.ogg',   0.70],
+  takeHit:    ['take-hit.ogg',   0.50],
+  roundWin:   ['round-win.mp3',  0.70],
+  stageClear: ['stage-clear.mp3',0.78],
+  victory:    ['victory.mp3',    0.85],
+  lose:       ['lose.ogg',       0.65],
+  defeat:     ['defeat.ogg',     0.55],
+};
+
+const sfx = (() => {
+  let ctx = null;
+  let master = null;
+  // Continuous master volume in [0, 1]. Read persisted preference; default 1.
+  let volume = (() => {
+    const v = Number(localStorage.getItem(SOUND_VOLUME_KEY));
+    return Number.isFinite(v) && v >= 0 && v <= 1 ? v : 1;
+  })();
+  const arrayBuffers = {};   // name → ArrayBuffer (prefetched)
+  const buffers = {};        // name → AudioBuffer (decoded once ctx exists)
+
+  // Prefetch all SFX files as raw ArrayBuffers immediately. No AudioContext
+  // needed yet — decoding is deferred until ensure() runs at first user gesture.
+  for (const name of Object.keys(SFX_FILES)) {
+    const file = SFX_FILES[name][0];
+    fetch(`assets/sfx/${file}`)
+      .then(r => r.arrayBuffer())
+      .then(ab => {
+        arrayBuffers[name] = ab;
+        if (ctx && !buffers[name]) decode(name, ab);
+      })
+      .catch(() => { /* silent — sfx just won't play that clip */ });
+  }
+
+  const decode = (name, ab) => {
+    if (!ctx) return;
+    // decodeAudioData detaches the buffer; clone first so retries are safe.
+    const copy = ab.slice(0);
+    ctx.decodeAudioData(copy, buf => { buffers[name] = buf; }, () => {});
+  };
+
+  const ensure = () => {
+    if (ctx) return ctx;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    ctx = new AC();
+    // Master bus: HARD high-pass (cut everything below ~120Hz so sub-bass
+    // explosions don't overwhelm the mix on headphones / good speakers)
+    // → compressor → master gain → destination.
+    const lowCut = ctx.createBiquadFilter();
+    lowCut.type = 'highpass';
+    lowCut.frequency.value = 120;
+    lowCut.Q.value = 0.7;
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -14;
+    comp.knee.value = 6;
+    comp.ratio.value = 3;
+    comp.attack.value = 0.003;
+    comp.release.value = 0.12;
+    master = ctx.createGain();
+    master.gain.value = volume;
+    lowCut.connect(comp).connect(master).connect(ctx.destination);
+    master._in = lowCut; // sounds enter at the low-cut stage
+    // Decode anything that finished prefetching before the context existed.
+    for (const [n, ab] of Object.entries(arrayBuffers)) {
+      if (!buffers[n]) decode(n, ab);
+    }
+    return ctx;
+  };
+  const out = () => master._in;
+
+  const play = (name) => {
+    if (volume <= 0) return;
+    const ac = ensure();
+    if (!ac) return;
+    if (ac.state === 'suspended') ac.resume();
+    const buf = buffers[name];
+    if (!buf) return; // not yet decoded — skip rather than block
+    const trim = (SFX_FILES[name] && SFX_FILES[name][1]) || 0.6;
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    const g = ac.createGain();
+    g.gain.value = trim;
+    src.connect(g).connect(out());
+    src.start();
+  };
+
+  return {
+    // Continuous volume control (0..1).
+    getVolume: () => volume,
+    setVolume(v) {
+      const clamped = Math.max(0, Math.min(1, +v || 0));
+      volume = clamped;
+      localStorage.setItem(SOUND_VOLUME_KEY, String(clamped));
+      if (master) master.gain.value = clamped;
+    },
+    isMuted: () => volume <= 0,
+    shoot()      { play('shoot'); },
+    pegHit()     { play('pegHit'); },
+    pegBreak()   { play('pegBreak'); },
+    split()      { play('split'); },
+    heal()       { play('heal'); },
+    bomb()       { play('bomb'); },
+    reset()      { play('reset'); },
+    dealHit()    { play('dealHit'); },
+    takeHit()    { play('takeHit'); },
+    win()        { play('roundWin'); }, // backstop alias
+    roundWin()   { play('roundWin'); },
+    stageClear() { play('stageClear'); },
+    victory()    { play('victory'); },
+    lose()       { play('lose'); },
+    defeat()     { play('defeat'); },
+  };
+})();
+
+// ----- Sound button + volume slider popup -------------------------------
+// Tap the speaker button to open a small popup with a continuous slider.
+// Drag to fine-tune volume from 0 (mute) to 1 (full). Icon waves reflect
+// the current level so the player can read "loud / quiet / off" at a glance.
+(function buildSoundToggle() {
+  const controls = document.querySelector('.controls');
+  if (!controls) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'sound-control';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'icon-btn icon-btn-sound';
+  btn.title = '音量';
+  btn.setAttribute('aria-label', '音量');
+  function levelFromVolume(v) {
+    if (v <= 0) return 0;
+    if (v <= 0.5) return 1;
+    return 2;
+  }
+  btn.dataset.level = String(levelFromVolume(sfx.getVolume()));
+  btn.innerHTML = `
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <radialGradient id="sndBody" cx="0.34" cy="0.26" r="0.88">
+          <stop offset="0%" stop-color="#eafff4"/>
+          <stop offset="32%" stop-color="#74e3b0"/>
+          <stop offset="78%" stop-color="#2da06a"/>
+          <stop offset="100%" stop-color="#0e4830"/>
+        </radialGradient>
+        <linearGradient id="sndRing" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#d8ffec"/>
+          <stop offset="100%" stop-color="#185c3d"/>
+        </linearGradient>
+        <linearGradient id="sndGloss" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+          <stop offset="60%" stop-color="#ffffff" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="50" cy="93" rx="36" ry="6" fill="rgba(20,8,32,0.32)"/>
+      <circle cx="50" cy="50" r="48" fill="#1a0a2c"/>
+      <circle cx="50" cy="50" r="46" fill="url(#sndRing)"/>
+      <circle cx="50" cy="50" r="40" fill="#1a0a2c"/>
+      <circle cx="50" cy="52" r="38" fill="#1f6a48"/>
+      <circle cx="50" cy="50" r="38" fill="url(#sndBody)"/>
+      <path d="M16 38 Q50 14 84 38 Q72 28 50 28 Q28 28 16 38 Z" fill="url(#sndGloss)"/>
+      <ellipse cx="36" cy="30" rx="9" ry="4" fill="#ffffff" opacity="0.85"/>
+      <!-- Speaker shape -->
+      <path class="snd-body" d="M 28 42 L 38 42 L 50 32 L 50 68 L 38 58 L 28 58 Z"
+            fill="#ffffff" stroke="#1a0a2c" stroke-width="3.5" stroke-linejoin="round"/>
+      <!-- Wave 1 (mid+) -->
+      <path class="snd-wave-1" d="M 58 42 Q 64 50 58 58"
+            fill="none" stroke="#1a0a2c" stroke-width="3.6" stroke-linecap="round"/>
+      <!-- Wave 2 (full only) -->
+      <path class="snd-wave-2" d="M 65 36 Q 76 50 65 64"
+            fill="none" stroke="#1a0a2c" stroke-width="3.6" stroke-linecap="round"/>
+      <!-- X mark (mute only) -->
+      <g class="snd-x" stroke="#cc1d1d" stroke-width="5" stroke-linecap="round" fill="none">
+        <line x1="58" y1="38" x2="78" y2="62"/>
+        <line x1="78" y1="38" x2="58" y2="62"/>
+      </g>
+      <circle cx="78" cy="22" r="1.7" fill="#ffffff" opacity="0.7"/>
+      <circle cx="22" cy="78" r="1.4" fill="#ffffff" opacity="0.5"/>
+    </svg>
+  `;
+  wrap.appendChild(btn);
+
+  // Popup with slider — appears above the button on tap.
+  const pop = document.createElement('div');
+  pop.className = 'sound-popup';
+  pop.innerHTML = `
+    <input class="sound-slider" type="range" min="0" max="100" step="5"
+           value="${Math.round(sfx.getVolume() * 100)}" aria-label="音量" />
+    <span class="sound-pct">${Math.round(sfx.getVolume() * 100)}</span>
+  `;
+  wrap.appendChild(pop);
+  controls.appendChild(wrap);
+
+  const slider = pop.querySelector('.sound-slider');
+  const pct = pop.querySelector('.sound-pct');
+  let lastPlayedAt = 0;
+
+  function refresh() {
+    const v = sfx.getVolume();
+    btn.dataset.level = String(levelFromVolume(v));
+    slider.value = String(Math.round(v * 100));
+    pct.textContent = String(Math.round(v * 100));
+  }
+  refresh();
+
+  slider.addEventListener('input', () => {
+    const v = Math.max(0, Math.min(1, slider.valueAsNumber / 100));
+    sfx.setVolume(v);
+    pct.textContent = String(Math.round(v * 100));
+    btn.dataset.level = String(levelFromVolume(v));
+    // Throttled audible preview as the user drags so they hear the change.
+    const now = Date.now();
+    if (v > 0 && now - lastPlayedAt > 120) {
+      sfx.pegHit();
+      lastPlayedAt = now;
+    }
+  });
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    pop.classList.toggle('open');
+  });
+  // Close on outside tap.
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) pop.classList.remove('open');
+  });
+})();
+
 // Compatibility table: orbType × pegColor → effect
 // Bomb peg explodes on any orb impact (chain-destroys nearby pegs).
 const MATCH = {
-  round:  { white: 'normal', red: 'normal',  blue: 'destroy', green: 'normal',  heal: 'heal', bomb: 'bomb' },
-  spike:  { white: 'normal', red: 'destroy', blue: 'normal',  green: 'normal',  heal: 'heal', bomb: 'bomb' },
-  drop:   { white: 'normal', red: 'normal',  blue: 'normal',  green: 'split',   heal: 'heal', bomb: 'bomb' },
-  star:   { white: 'normal', red: 'destroy', blue: 'destroy', green: 'destroy', heal: 'heal', bomb: 'bomb' },
+  round:  { white: 'normal', red: 'normal',  blue: 'destroy', green: 'normal',  heal: 'heal', bomb: 'bomb', reset: 'reset' },
+  spike:  { white: 'normal', red: 'destroy', blue: 'normal',  green: 'normal',  heal: 'heal', bomb: 'bomb', reset: 'reset' },
+  drop:   { white: 'normal', red: 'normal',  blue: 'normal',  green: 'split',   heal: 'heal', bomb: 'bomb', reset: 'reset' },
+  star:   { white: 'normal', red: 'destroy', blue: 'destroy', green: 'destroy', heal: 'heal', bomb: 'bomb', reset: 'reset' },
 };
-const DAMAGE = { normal: 1, destroy: 2, split: 1, heal: 0, bomb: 2 }; // heal/bomb handled with custom branches
+const DAMAGE = { normal: 1, destroy: 2, split: 1, heal: 0, bomb: 2, reset: 0 }; // heal/bomb/reset handled with custom branches
 const HEAL_AMOUNT = 2;
 const BOMB_RADIUS = 62;       // chain-destroy radius for bomb peg
 const BOMB_DAMAGE_CAP = 9;    // damage ceiling for bomb chain
@@ -113,6 +356,7 @@ const PEG_FILL = {
   green: '#74d756',  // matches drop orb
   heal:  '#ff97c2',  // pink heart-pink
   bomb:  '#ffae3a',  // explosive — orange-gold body, X icon overlay
+  reset: '#3ee0d4',  // cyan/teal — revives all dead pegs on this side
 };
 // Per-color bounce factor — multiplied with the ORB's damp on normal bounce
 // so pegs visually feel different. White (neutral) = bounciest pinball pegs;
@@ -124,6 +368,7 @@ const PEG_BOUNCE = {
   green: 0.80,
   heal:  0.55,
   bomb:  0.95,
+  reset: 0.85,
 };
 
 // Stage 1 = teaching stage. ONLY blue + gray (white) pegs. No HEAL.
@@ -223,6 +468,18 @@ function applyLapDifficulty(baseCfg, playLap = 0) {
       if (pegPalette[i] === 'white') {
         pegPalette[i] = 'bomb';
         inserted++;
+      }
+    }
+  }
+  // Reset peg — guaranteed 1 per board on stage 2-3. Skip stage 1 so the
+  // teaching board (青ペグ + グレー only) stays clean. Priority list:
+  // white > heal > green > blue.
+  if (baseCfg.pegPalette !== STAGES[0].pegPalette) {
+    for (const target of ['white', 'heal', 'green', 'blue']) {
+      const idx = pegPalette.indexOf(target);
+      if (idx >= 0) {
+        pegPalette[idx] = 'reset';
+        break;
       }
     }
   }
@@ -556,7 +813,7 @@ function startStage(idx) {
   const cfg = applyLapDifficulty(STAGES[idx], playLap);
   const playerQueue = [];
   const enemyQueue = [];
-  fillQueue(playerQueue, 8, idx, playLap);
+  fillQueue(playerQueue, 12, idx, playLap);
   fillQueue(enemyQueue, 8, idx, playLap);
   state = {
     phase: 'countdown', // countdown / aim / dropping / resolving / ended
@@ -625,9 +882,46 @@ const ORB_TARGET_COLOR = {
   drop:  PEG_FILL.green,
 };
 
-function updateQueueUI() {
-  /* canvas-rendered now (drawCannon in render) */
+const nextOrbStackEl = document.querySelector('#next-orb-stack');
+const NEXT_PREVIEW_MAX = 10;
+
+function getNextPreviewCount(playLap) {
+  // Veterans (more adventure clears) see further into the queue. Lap 0 sees
+  // just the immediate next; cap the look-ahead at NEXT_PREVIEW_MAX.
+  return Math.min(NEXT_PREVIEW_MAX, Math.max(1, (playLap || 0) + 1));
 }
+
+function updateQueueUI() {
+  // The DOM "NEXT" stack between the boards mirrors queue[0..N-1] so the
+  // top disc always matches the orb currently loaded in the cannon, and the
+  // discs below preview the upcoming firing order.
+  if (!nextOrbStackEl) return;
+  const visible = getNextPreviewCount(state && state.playLap);
+  if (nextOrbStackEl.children.length !== visible) {
+    nextOrbStackEl.innerHTML = '';
+    for (let i = 0; i < visible; i++) {
+      const d = document.createElement('span');
+      d.className = 'next-orb-disc';
+      nextOrbStackEl.appendChild(d);
+    }
+  }
+  for (let i = 0; i < visible; i++) {
+    const orb = state && state.queue && state.queue[i];
+    const cfg = orb && ORBS[orb];
+    const disc = nextOrbStackEl.children[i];
+    if (!disc) continue;
+    if (cfg) {
+      disc.style.backgroundColor = cfg.color;
+      disc.dataset.orb = orb;
+    } else {
+      disc.style.backgroundColor = 'rgba(255,255,255,.18)';
+      delete disc.dataset.orb;
+    }
+  }
+}
+
+const playerBoardBg = document.querySelector('.board-bg-player');
+const enemyBoardBg = document.querySelector('.board-bg-enemy');
 
 function updateHUD() {
   const p = Math.max(0, state.playerHP) / PLAYER_HP_MAX;
@@ -637,6 +931,10 @@ function updateHUD() {
   if (playerHpText) playerHpText.textContent = Math.max(0, state.playerHP);
   if (enemyHpText) enemyHpText.textContent = Math.max(0, state.enemyHP);
   stageEl.textContent = `${state.stageIdx + 1}/${STAGES.length}`;
+  // Bridge HP fractions to CSS variables so the boards can tint, crack,
+  // and pulse purely via CSS as damage builds.
+  if (playerBoardBg) playerBoardBg.style.setProperty('--hp-frac', p.toFixed(3));
+  if (enemyBoardBg)  enemyBoardBg.style.setProperty('--hp-frac', e.toFixed(3));
 }
 
 function dropBall(side, x, orbType) {
@@ -656,7 +954,8 @@ function playerDrop() {
   if (state.phase !== 'aim') return;
   if (state.queue.length === 0) return;
   const orb = state.queue.shift();
-  fillQueue(state.queue, 8, state.stageIdx, state.playLap || 0);
+  fillQueue(state.queue, 12, state.stageIdx, state.playLap || 0);
+  sfx.shoot();
   dropBall('player', state.aimX, orb);
   // Enemy drops simultaneously (lockstep)
   enemyDropResponse();
@@ -753,6 +1052,8 @@ function updateBalls(balls, pegs, side, dt) {
         const effect = MATCH[b.orb][p.color];
         const isMatch = effect !== 'normal';
         if (effect === 'bomb') {
+          sfx.bomb();
+          if (side === 'player') sfx.dealHit(); else sfx.takeHit();
           // Bomb peg explodes: chain-destroy nearby pegs and damage opponent.
           const chained = [];
           for (const q of pegs) {
@@ -811,7 +1112,35 @@ function updateBalls(balls, pegs, side, dt) {
           b.vx += (Math.random() - 0.5) * 110;
           break; // 1 collision per frame
         }
+        if (effect === 'reset') {
+          // Reset peg — revives every dead peg on this side. The reset peg
+          // itself is consumed in the process.
+          sfx.reset();
+          let revived = 0;
+          for (const q of pegs) {
+            if (q === p) continue;
+            if (!q.alive) {
+              q.alive = true;
+              q.hitFlash = 0.30; // soft pulse to read "I'm back"
+              revived++;
+            }
+          }
+          const sourceX = p.x + getBoardX(side);
+          spawnMatchText(sourceX, p.y - 22, 'REVIVE!', '#3ee0d4');
+          if (revived > 0) {
+            spawnDamagePopup(sourceX, p.y, '+' + revived, '#3ee0d4', true);
+          }
+          // Mark the reset peg itself dead and animate.
+          p.alive = false;
+          p.hitFlash = 0.32;
+          state.pegBreakAnims.push({ x: sourceX, y: p.y, t: 0, dur: 0.50, color: 'reset' });
+          // Ball passes through with mild slowdown.
+          b.vy *= 0.82;
+          b.vx += (Math.random() - 0.5) * 60;
+          break;
+        }
         if (effect === 'heal') {
+          sfx.heal();
           // Heal own side instead of damaging opponent
           if (side === 'player') {
             state.playerHP = Math.min(PLAYER_HP_MAX, state.playerHP + HEAL_AMOUNT);
@@ -827,6 +1156,11 @@ function updateBalls(balls, pegs, side, dt) {
             triggerPlateReaction('enemy', true);
           }
         } else {
+          if (effect === 'destroy') sfx.pegBreak();
+          else if (effect === 'split') sfx.split();
+          else sfx.pegHit();
+          // Damage side cue layered over the peg sound (dealt vs received).
+          if (side === 'player') sfx.dealHit(); else sfx.takeHit();
           const dmg = DAMAGE[effect];
           // Apply damage to OPPONENT HP
           if (side === 'player') {
@@ -980,12 +1314,14 @@ function onStageEnd(won) {
   const cfg = STAGES[state.stageIdx];
   const STAGE_TARGET = 2; // 2 wins clears stage
   if (won && state.playerWins < STAGE_TARGET) {
+    sfx.roundWin();
     // Round won but stage not cleared — flash, brief banner, restart round
     showOverlay('ROUND WIN!', `あと ${STAGE_TARGET - state.playerWins} 勝でステージクリアがめ！`, PALETTE.player);
     setTimeout(() => { hideOverlay(); restartRound(); }, 1300);
     return;
   }
   if (!won && state.enemyWins < STAGE_TARGET) {
+    sfx.lose();
     showOverlay('ROUND LOST', `あと ${STAGE_TARGET - state.enemyWins} 度負けたら敗北がめ…！`, PALETTE.damageText);
     setMascotSprite('damage');
     flashClass(mascotSlot, 'damage', 360);
@@ -1000,9 +1336,11 @@ function onStageEnd(won) {
     flashMascot('victory', 1200);
     if (state.stageIdx + 1 >= STAGES.length) {
       // Final victory
+      sfx.victory();
       showOverlay('VICTORY!', `冒険クリアがめ〜！`, PALETTE.yellow);
       setTimeout(() => onFinalVictory(), 1500);
     } else {
+      sfx.stageClear();
       hideOverlay();
       const clearDlg = document.querySelector('#stage-clear-dialog');
       const advance = () => {
@@ -1014,6 +1352,7 @@ function onStageEnd(won) {
       clearDlg.showModal();
     }
   } else {
+    sfx.defeat();
     setPlayerState(''); // stop idle anim
     setMascotSprite('defeat');
     flashClass(mascotSlot, 'damage', 360);
@@ -1037,7 +1376,7 @@ function restartRound() {
   state.enemyBalls = [];
   state.queue = [];
   state.enemyQueue = [];
-  fillQueue(state.queue, 8, state.stageIdx, state.playLap || 0);
+  fillQueue(state.queue, 12, state.stageIdx, state.playLap || 0);
   fillQueue(state.enemyQueue, 8, state.stageIdx, state.playLap || 0);
   state.phase = 'aim';
   state.aimX = BOARD_W / 2;
@@ -2152,6 +2491,32 @@ function renderBoard(side, x0, pegs, balls, hitFlash) {
         ctx.arc(sx, sy, 1.6, 0, Math.PI * 2);
         ctx.fill();
       }
+    } else if (p.color === 'reset') {
+      // Reset peg — refresh symbol drawn as ↻ glyph + slow rotating sparkle
+      // ring so the player reads "magic / revive".
+      ctx.font = `bold ${Math.round(r * 1.55)}px "M PLUS Rounded 1c","Hiragino Maru Gothic ProN",ui-rounded,system-ui,sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineWidth = 3;
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#1a0a2c';
+      ctx.strokeText('↻', p.x, p.y + 1);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('↻', p.x, p.y + 1);
+      ctx.textAlign = 'start';
+      ctx.textBaseline = 'alphabetic';
+      // Drifting sparkles to differentiate from bomb's danger sparks.
+      const t = Date.now();
+      const sparkA = 0.4 + 0.3 * Math.sin(t / 260 + p.x * 0.1);
+      ctx.fillStyle = `rgba(186,250,242,${sparkA})`;
+      for (let i = 0; i < 3; i++) {
+        const a = (i / 3) * Math.PI * 2 + t / 520;
+        const sx = p.x + Math.cos(a) * (r + 3.2);
+        const sy = p.y + Math.sin(a) * (r + 3.2);
+        ctx.beginPath();
+        ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
     } else if (r >= 5.0) {
       // Tiny puyo eyes — small black dots inside white
       const eyeR = Math.max(1.0, r * 0.20);
@@ -2180,15 +2545,14 @@ function renderBoard(side, x0, pegs, balls, hitFlash) {
       ctx.stroke();
     }
   }
-  // Balls — puyo with squash & stretch + eyes + thick black silhouette
+  // Balls — faceless disc with squash & stretch + thick black silhouette,
+  // matching the NEXT stock disc style.
   for (const b of balls) {
     const orbCfg = ORBS[b.orb];
-    // Squash & stretch — kept gentle so the landing zone reads cleanly
     const vRatio = Math.max(-1, Math.min(1, b.vy / 600));
     const sx = 1 - vRatio * 0.10;
     const sy = 1 + vRatio * 0.12;
     ctx.save();
-    // Trail wisp behind ball (motion comet) — thin, just enough to imply speed
     if (b.vy > 320) {
       const trailA = Math.min(0.35, (b.vy - 320) / 800);
       const tg = ctx.createLinearGradient(b.x, b.y - BALL_R, b.x, b.y - BALL_R - 18);
@@ -2204,88 +2568,37 @@ function renderBoard(side, x0, pegs, balls, hitFlash) {
     ctx.beginPath();
     ctx.ellipse(b.x, b.y + BALL_R * 0.92, BALL_R * 0.92, BALL_R * 0.30, 0, 0, Math.PI * 2);
     ctx.fill();
-    // Apply squash transform centered on ball
     ctx.translate(b.x, b.y);
     ctx.scale(sx, sy);
-    // Black silhouette outer
+    // Thick black silhouette
     ctx.fillStyle = '#1a0a2c';
     ctx.beginPath();
     ctx.arc(0, 0, BALL_R + 1.2, 0, Math.PI * 2);
     ctx.fill();
-    // Body gradient — strong puyo pop
-    const bg = ctx.createRadialGradient(-BALL_R * 0.36, -BALL_R * 0.48, 0.5, 0, 0, BALL_R * 1.05);
-    bg.addColorStop(0,    '#ffffff');
-    bg.addColorStop(0.16, lighten(orbCfg.color, 0.55));
-    bg.addColorStop(0.55, orbCfg.color);
-    bg.addColorStop(1,    darken(orbCfg.color, 0.35));
-    ctx.fillStyle = bg;
+    // Solid orb color (matches NEXT stock disc)
+    ctx.fillStyle = orbCfg.color;
     ctx.beginPath();
     ctx.arc(0, 0, BALL_R, 0, Math.PI * 2);
     ctx.fill();
-    // Crescent top gloss
+    // Inset top sheen + bottom shadow (mirrors stock disc box-shadow)
     ctx.save();
-    ctx.beginPath();
-    ctx.arc(0, 0, BALL_R * 0.92, 0, Math.PI * 2);
-    ctx.clip();
-    ctx.fillStyle = 'rgba(255,255,255,.7)';
-    ctx.beginPath();
-    ctx.ellipse(0, -BALL_R * 0.30, BALL_R * 0.78, BALL_R * 0.42, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-    // Pinpoint highlight
-    ctx.fillStyle = 'rgba(255,255,255,.95)';
-    ctx.beginPath();
-    ctx.ellipse(-BALL_R * 0.32, -BALL_R * 0.46, BALL_R * 0.28, BALL_R * 0.16, -0.3, 0, Math.PI * 2);
-    ctx.fill();
-    // Bottom rim shadow (plumpness)
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(0, 0, BALL_R * 0.95, 0, Math.PI * 2);
-    ctx.clip();
-    const rg = ctx.createRadialGradient(0, BALL_R * 0.25, BALL_R * 0.4, 0, BALL_R * 0.4, BALL_R * 1.1);
-    rg.addColorStop(0, 'rgba(0,0,0,0)');
-    rg.addColorStop(1, 'rgba(0,0,0,0.32)');
-    ctx.fillStyle = rg;
     ctx.beginPath();
     ctx.arc(0, 0, BALL_R, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(255,255,255,.5)';
+    ctx.beginPath();
+    ctx.ellipse(0, -BALL_R * 0.65, BALL_R * 1.2, BALL_R * 0.32, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.18)';
+    ctx.beginPath();
+    ctx.ellipse(0, BALL_R * 0.78, BALL_R * 1.2, BALL_R * 0.30, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
-    // Puyo eyes
-    const eyeR = BALL_R * 0.20;
-    const eyeOff = BALL_R * 0.36;
-    const eyeY = BALL_R * 0.04;
-    // Eye black rim
-    ctx.fillStyle = '#1a0a2c';
+    // Single white highlight blob (top-left, like .next-orb-disc::after)
+    ctx.fillStyle = 'rgba(255,255,255,.55)';
     ctx.beginPath();
-    ctx.arc(-eyeOff, eyeY, eyeR + 1.6, 0, Math.PI * 2);
-    ctx.arc( eyeOff, eyeY, eyeR + 1.6, 0, Math.PI * 2);
+    ctx.ellipse(-BALL_R * 0.32, -BALL_R * 0.36, BALL_R * 0.32, BALL_R * 0.24, 0, 0, Math.PI * 2);
     ctx.fill();
-    // Eye white
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(-eyeOff, eyeY, eyeR + 1.0, 0, Math.PI * 2);
-    ctx.arc( eyeOff, eyeY, eyeR + 1.0, 0, Math.PI * 2);
-    ctx.fill();
-    // Pupil
-    ctx.fillStyle = '#1a0a2c';
-    ctx.beginPath();
-    ctx.arc(-eyeOff + eyeR * 0.20, eyeY + eyeR * 0.20, eyeR, 0, Math.PI * 2);
-    ctx.arc( eyeOff + eyeR * 0.20, eyeY + eyeR * 0.20, eyeR, 0, Math.PI * 2);
-    ctx.fill();
-    // Catchlight
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(-eyeOff + eyeR * 0.50, eyeY - eyeR * 0.10, eyeR * 0.35, 0, Math.PI * 2);
-    ctx.arc( eyeOff + eyeR * 0.50, eyeY - eyeR * 0.10, eyeR * 0.35, 0, Math.PI * 2);
-    ctx.fill();
-    // Tiny mouth (open smile)
-    ctx.strokeStyle = '#1a0a2c';
-    ctx.lineWidth = 1.4;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.arc(0, BALL_R * 0.40, BALL_R * 0.18, 0.2 * Math.PI, 0.8 * Math.PI);
-    ctx.stroke();
-    ctx.lineCap = 'butt';
     // Star orb decorations — sparkle ring + 5-point star on the body
     if (b.orb === 'star') {
       const t = Date.now() / 320;
@@ -2367,7 +2680,6 @@ canvas.addEventListener('pointerdown', e => {
   }
 });
 
-document.querySelector('#reset').addEventListener('click', () => startStage(0));
 
 // ---- ENDGAME ----
 function onFinalVictory() {
