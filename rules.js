@@ -101,7 +101,6 @@
 
   const bookBtn = document.createElement('button');
   bookBtn.type = 'button';
-  bookBtn.textContent = '📖';
   bookBtn.title = 'ペグ＆玉ずかん';
   bookBtn.setAttribute('aria-label', 'ペグ＆玉ずかん');
   bookBtn.className = 'icon-btn icon-btn-book';

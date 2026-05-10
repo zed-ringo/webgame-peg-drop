@@ -227,14 +227,7 @@ h1,h2,p,ul{margin:0}
 .icon-btn-power{background:url("assets/btn-power.svg") center/contain no-repeat}
 .icon-btn-help{background:url("assets/btn-help.svg") center/contain no-repeat}
 .icon-btn-pause{background:url("assets/btn-pause.svg") center/contain no-repeat}
-.icon-btn-book{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:1.6rem;
-  line-height:1;
-  text-shadow:0 2px 0 rgba(0,0,0,.18);
-}
+.icon-btn-book{background:url("assets/btn-book.svg") center/contain no-repeat}
 
 .vs-bar{
   display:grid;

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" font-family="'M PLUS Rounded 1c','Hiragino Maru Gothic ProN',ui-rounded,system-ui,sans-serif">
+  <defs>
+    <radialGradient id="bookBody" cx="0.34" cy="0.26" r="0.88">
+      <stop offset="0%" stop-color="#fff0f5"/>
+      <stop offset="32%" stop-color="#ff9ed2"/>
+      <stop offset="78%" stop-color="#d6478e"/>
+      <stop offset="100%" stop-color="#7a1f4a"/>
+    </radialGradient>
+    <linearGradient id="bookRing" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe6f1"/>
+      <stop offset="100%" stop-color="#8a2553"/>
+    </linearGradient>
+    <linearGradient id="bookGloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="50" cy="93" rx="36" ry="6" fill="rgba(20,8,32,0.32)"/>
+  <circle cx="50" cy="50" r="48" fill="#1a0a2c"/>
+  <circle cx="50" cy="50" r="46" fill="url(#bookRing)"/>
+  <circle cx="50" cy="50" r="40" fill="#1a0a2c"/>
+  <circle cx="50" cy="52" r="38" fill="#a83263"/>
+  <circle cx="50" cy="50" r="38" fill="url(#bookBody)"/>
+  <path d="M16 38 Q50 14 84 38 Q72 28 50 28 Q28 28 16 38 Z" fill="url(#bookGloss)"/>
+  <ellipse cx="36" cy="30" rx="9" ry="4" fill="#ffffff" opacity="0.85"/>
+  <!-- Open book glyph -->
+  <g stroke="#1a0a2c" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M 22 40 Q 36 34 50 38 L 50 70 Q 36 66 22 72 Z" fill="#ffffff" stroke-width="3.5"/>
+    <path d="M 78 40 Q 64 34 50 38 L 50 70 Q 64 66 78 72 Z" fill="#ffffff" stroke-width="3.5"/>
+    <line x1="50" y1="38" x2="50" y2="70" stroke-width="3.5"/>
+    <line x1="29" y1="48" x2="44" y2="48" stroke-width="2.4" opacity="0.5"/>
+    <line x1="29" y1="56" x2="44" y2="56" stroke-width="2.4" opacity="0.5"/>
+    <line x1="56" y1="48" x2="71" y2="48" stroke-width="2.4" opacity="0.5"/>
+    <line x1="56" y1="56" x2="71" y2="56" stroke-width="2.4" opacity="0.5"/>
+  </g>
+  <circle cx="78" cy="22" r="1.7" fill="#ffffff" opacity="0.7"/>
+  <circle cx="22" cy="78" r="1.4" fill="#ffffff" opacity="0.5"/>
+</svg>
