@@ -227,6 +227,14 @@ h1,h2,p,ul{margin:0}
 .icon-btn-power{background:url("assets/btn-power.svg") center/contain no-repeat}
 .icon-btn-help{background:url("assets/btn-help.svg") center/contain no-repeat}
 .icon-btn-pause{background:url("assets/btn-pause.svg") center/contain no-repeat}
+.icon-btn-book{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.6rem;
+  line-height:1;
+  text-shadow:0 2px 0 rgba(0,0,0,.18);
+}
 
 .vs-bar{
   display:grid;
@@ -731,6 +739,127 @@ h1,h2,p,ul{margin:0}
 .intro-steps li::marker{color:#ff7e3c;font-weight:900}
 .intro-steps strong{font-weight:900}
 .intro-steps strong.hot{color:#ff4f1d}
+
+/* Intro dialog — full tutorial sections + embedded encyclopedia */
+.intro-scroll{
+  max-height:60svh;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding-right:6px;
+  margin:8px -2px 0;
+  mask-image:linear-gradient(180deg,
+    transparent 0,
+    #000 12px,
+    #000 calc(100% - 12px),
+    transparent 100%);
+}
+.intro-sec{margin:0 0 16px}
+.intro-sec:last-child{margin-bottom:0}
+.intro-sec-h{
+  margin:6px 0 8px;
+  font-size:1.05rem;
+  color:#ff7e3c;
+  -webkit-text-stroke:2.4px var(--line-dark);
+  paint-order:stroke fill;
+  letter-spacing:.04em;
+  text-align:left;
+  font-weight:900;
+}
+.intro-p{
+  margin:0;
+  color:#3b1f12;
+  font-weight:700;
+  line-height:1.5;
+  text-align:left;
+}
+.intro-p strong{font-weight:900;color:#ff4f1d}
+.intro-tips{
+  list-style:disc;
+  padding-left:1.2em;
+  margin:0;
+  display:grid;
+  gap:8px;
+  text-align:left;
+  color:#3b1f12;
+  font-weight:700;
+  line-height:1.45;
+}
+.intro-tips li::marker{color:#ff7e3c}
+.intro-tips strong{font-weight:900}
+.intro-tips strong.hot{color:#ff4f1d}
+
+.intro-lead{
+  margin:0 0 14px;
+  padding:10px 14px;
+  background:rgba(255,219,140,.45);
+  border:3px solid var(--line-dark);
+  border-radius:14px;
+  color:#3b1f12;
+  font-weight:900;
+  font-size:1.02rem;
+  line-height:1.4;
+  text-align:left;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.6);
+}
+.intro-lead strong{color:#ff4f1d}
+
+.intro-foot{
+  margin:8px 0 0;
+  font-size:.85rem;
+  color:#6a4a2c;
+  font-weight:700;
+  text-align:left;
+  line-height:1.4;
+}
+.intro-foot strong{color:#ff7e3c;font-weight:900}
+
+.rules-content .rule-section{
+  margin:8px 0 4px;
+  font-size:1rem;
+  color:#ff7e3c;
+  -webkit-text-stroke:2px var(--line-dark);
+  paint-order:stroke fill;
+  letter-spacing:.06em;
+  text-align:left;
+  font-weight:900;
+}
+.rules-content .rule-list{
+  list-style:none;
+  padding:0;
+  margin:6px 0 4px;
+  display:grid;
+  gap:10px;
+}
+.rules-content .rule-row{
+  display:grid;
+  grid-template-columns:36px minmax(0,1fr);
+  gap:10px;
+  align-items:center;
+  font-size:.9rem;
+  line-height:1.4;
+  text-align:left;
+}
+.rules-content .rule-disc{
+  width:36px;height:36px;
+  border-radius:50%;
+  border:3px solid var(--line-dark);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;
+  font-size:1rem;
+  color:#1a0a2c;
+  box-shadow:0 2px 0 rgba(0,0,0,.18);
+}
+.rules-content .rule-name{display:block;font-weight:900;color:#3b1f12}
+.rules-content .rule-desc{display:block;color:#4a2a65;font-size:.84rem}
+.rules-content .rule-lock{
+  display:inline-block;
+  margin-left:6px;
+  font-size:.74rem;
+  color:#a04a18;
+  font-weight:800;
+}
+.rules-content .rule-locked .rule-disc{filter:grayscale(.8) brightness(.85)}
+.rules-content .rule-locked .rule-name{color:#7a5a3e}
 
 .canvas-wrap{
   position:relative;

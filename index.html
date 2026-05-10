@@ -76,14 +76,32 @@
         <img class="clear-art intro-art" src="assets/turtle-howto.png" alt="えすけーぷがめ" />
         <div class="intro-card">
           <h2 class="intro-title">Peg Drop — あそびかた</h2>
-          <ol class="intro-steps">
-            <li><strong>盤面をタップ</strong>すると、その上から玉が落ちるがめ！</li>
-            <li>同じ色のペグに当てて <strong class="hot">BREAK!</strong> 相手の HP をけずるがめ！</li>
-            <li><strong>先に 2 勝</strong>でステージクリア。<strong>3 ステージ</strong>勝てば冒険クリアがめ〜</li>
-          </ol>
+          <div class="intro-scroll">
+            <p class="intro-lead">玉を落として<strong>同じ色のペグ</strong>に当て、右がわのてきの HP を<strong>先に 0</strong> にするゲームがめ！</p>
+            <section class="intro-sec">
+              <h3 class="intro-sec-h">🎯 もくひょう</h3>
+              <p class="intro-p">左がわが自分、右がわがてき。<strong>同時に玉を落としあって</strong>、先に HP を削りきった方が勝ちがめ。</p>
+            </section>
+            <section class="intro-sec">
+              <h3 class="intro-sec-h">🎮 そうさ</h3>
+              <ol class="intro-steps">
+                <li><strong>左の盤面の上の方をタップ</strong>すると、そこから玉が落ちるがめ。</li>
+                <li>玉が<strong>同じ色のペグ</strong>に当たると <strong class="hot">BREAK!</strong>、てきの HP がドカンと減るがめ。</li>
+                <li>てきも玉を落としてくる。<strong>先に削りきった方が勝ち</strong>がめ〜</li>
+              </ol>
+            </section>
+            <section class="intro-sec">
+              <h3 class="intro-sec-h">⚔️ うまく当てるコツ</h3>
+              <ul class="intro-tips">
+                <li><strong>同じ色を当てる</strong> → BREAK でダメージアップ。連鎖するともっと強いがめ。</li>
+                <li><strong>紫ペグ</strong>に当たると<strong>自分の HP が回復</strong>するがめ。ピンチを立て直せるがめ。</li>
+              </ul>
+            </section>
+            <p class="intro-foot">ほかのペグや玉のしゅるいは <strong>📖 ボタン</strong> から見られるがめ〜</p>
+          </div>
         </div>
         <menu>
-          <button value="play" class="primary big">あそんでみるがめ！</button>
+          <button value="play" class="primary big">あそぶがめ！</button>
         </menu>
       </form>
     </dialog>
@@ -127,7 +145,7 @@
       </form>
     </dialog>
     <script>window.GAME_CONFIG={slug:"peg-drop",title:"Peg Drop"};</script>
-    <script src="app.js"></script>
     <script src="rules.js"></script>
+    <script src="app.js"></script>
   </body>
 </html>

@@ -31,17 +31,25 @@
   }
 
   const controls = document.querySelector('.controls') || document.body;
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.textContent = '?';
-  button.title = 'ペグと玉の図鑑';
-  button.setAttribute('aria-label', 'ペグと玉の図鑑');
-  button.className = 'icon-btn icon-btn-help';
-  controls.appendChild(button);
 
-  const dialog = document.createElement('dialog');
-  dialog.className = 'rules-dialog';
-  dialog.innerHTML =
+  // "?" — opens the tutorial (intro-dialog). The first-visit auto-open
+  // handled by app.js targets the same dialog, so callable any time after.
+  const introDialog = document.querySelector('#intro-dialog');
+  const helpBtn = document.createElement('button');
+  helpBtn.type = 'button';
+  helpBtn.textContent = '?';
+  helpBtn.title = 'あそびかた';
+  helpBtn.setAttribute('aria-label', 'あそびかた');
+  helpBtn.className = 'icon-btn icon-btn-help';
+  controls.appendChild(helpBtn);
+  helpBtn.addEventListener('click', () => {
+    if (introDialog && introDialog.showModal && !introDialog.open) introDialog.showModal();
+  });
+
+  // "📖" — opens the peg/orb encyclopedia (rules-dialog).
+  const rulesDialog = document.createElement('dialog');
+  rulesDialog.className = 'rules-dialog';
+  rulesDialog.innerHTML =
     `<form method="dialog">` +
       `<span>BOOK</span>` +
       `<h2>ペグ &amp; 玉ずかん</h2>` +
@@ -53,9 +61,16 @@
       `</div>` +
       `<menu><button class="primary" value="close">閉じるがめ</button></menu>` +
     `</form>`;
-  document.body.appendChild(dialog);
+  document.body.appendChild(rulesDialog);
 
-  button.addEventListener('click', () => {
-    if (dialog.showModal) dialog.showModal();
+  const bookBtn = document.createElement('button');
+  bookBtn.type = 'button';
+  bookBtn.textContent = '📖';
+  bookBtn.title = 'ペグ＆玉ずかん';
+  bookBtn.setAttribute('aria-label', 'ペグ＆玉ずかん');
+  bookBtn.className = 'icon-btn icon-btn-book';
+  controls.appendChild(bookBtn);
+  bookBtn.addEventListener('click', () => {
+    if (rulesDialog.showModal && !rulesDialog.open) rulesDialog.showModal();
   });
 })();
